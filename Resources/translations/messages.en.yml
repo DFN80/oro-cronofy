@@ -1,0 +1,14 @@
+dfn_oro_cronofy:
+    form:
+        cronofy_settings:               Cronofy Settings
+        api_settings:                   API Settings
+        client_id:                      Client ID
+        client_secret:                  Client Secret
+        calendar_sync:                  Calendar Synchronization
+        access_token:                   Access Token
+        auth_button:                    Connect to Cronofy
+
+        tooltip:
+            client_id:                  Enter Cronofy Client ID
+            client_secret:              Enter Cronofy Client Secret
+            access_token:               Cronofy Access Token
