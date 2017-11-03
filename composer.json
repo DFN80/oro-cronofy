@@ -1,0 +1,36 @@
+{
+    "name": "dfn/oro-cronofy-bundle",
+    "type": "symfony-bundle",
+    "description": "Adds integration for Cronofy to Oro for Calendar Synchronization",
+    "keywords": ["Cronofy", "OroCrm", "Calendar"],
+    "homepage": "https://github.com/DFN80/oro-cronofy",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mike Napier",
+            "email": "mike@napiercommunications.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.6",
+        "oro/calendar-bundle": "2.0.*"
+    },
+    "autoload": {
+        "psr-4" : {
+            "Dfn\\Bundle\\DfnOroCronofyBundle" : ""
+        }
+    },
+    "repositories": {
+        "oro": {
+            "type": "composer",
+            "url": "https://packagist.orocrm.com"
+        },
+        "asset-packagist": {
+            "type": "composer",
+            "url": "https://asset-packagist.orocrm.com"
+        }
+    },
+    "target-dir": "Dfn/Bundle/DfnOroCronofyBundle",
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
