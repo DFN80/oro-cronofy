@@ -6,6 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Class DfnOroCronofyController
@@ -20,11 +21,17 @@ class DfnOroCronofyController extends Controller
      */
     public function oauthAction(Request $request)
     {
+        //Check that a valid csrf token was sent in the state parameter of the request.
+        $csrfToken = $request->query->get('state');
+        if (!$this->isCsrfTokenValid('cronofy', $csrfToken)) {
+            throw new HttpException("Invalid Request");
+        }
+
         //Use the code to create a request for the users access and refresh tokens.
         //Need to create a API service to connect to cronofy API and use that.
         $code = $request->query->get('code');
-        $state = $request->getSchemeAndHttpHost();
+        $origin = $request->getSchemeAndHttpHost();
 
-        return new Response("<script>window.opener.postMessage('$code', '$state');window.close();</script>");
+        return new Response("<script>window.opener.postMessage('$code', '$origin');window.close();</script>");
     }
 }

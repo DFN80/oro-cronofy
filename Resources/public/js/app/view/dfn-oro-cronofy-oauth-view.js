@@ -18,10 +18,12 @@ define(function(require) {
         tagName: "button",
         attributes: {"type": "button", "class": "btn"},
         authUrl: null,
-        scope: "read_events create_event",
+        scope: "create_calendar read_events create_event delete_event read_free_busy change_participation_status",
+        state: null,
 
         initialize: function (options) {
-            this.authUrl = "//app.cronofy.com/oauth/authorize?response_type=code&client_id="+options.clientId+"&redirect_uri="+options.redirectUrl+"&scope="+this.scope;
+            this.state = options.state;
+            this.authUrl = "//app.cronofy.com/oauth/authorize?response_type=code&client_id="+options.clientId+"&redirect_uri="+options.redirectUrl+"&scope="+this.scope+"&state="+this.state;
             this.$el.html(__('dfn.oro_cronofy.oauth.connect'));
         },
         events: {
