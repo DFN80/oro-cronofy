@@ -1,0 +1,4 @@
+config:
+    paths:
+        'dfnorocronofy/js/app/view/dfn-oro-cronofy-oauth-view': 'bundles/dfnorocronofy/js/app/view/dfn-oro-cronofy-oauth-view.js'
+        'dfnorocronofy/js/app/component/dfn-oro-cronofy-oauth-component': 'bundles/dfnorocronofy/js/app/components/dfn-oro-cronofy-oauth-component.js'

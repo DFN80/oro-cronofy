@@ -1,8 +1,8 @@
 parameters:
-    dfn_oro_cronofy.form.type.dfn_oro_conofy_auth.class:    Dfn\Bundle\OroCronofyBundle\Form\Type\CronofyAuthButtonType
+    dfn_oro_cronofy.form.type.dfn_oro_conofy_auth.class:    Dfn\Bundle\OroCronofyBundle\Form\Type\CronofyAuthType
 
 services:
     dfn_oro_cronofy.form.type.dfn_oro_conofy_auth:
         class: %dfn_oro_cronofy.form.type.dfn_oro_conofy_auth.class%
         tags:
-            - { name: form.type, alias: dfn_oro_cronofy_auth_button }
+            - { name: form.type, alias: dfn_oro_cronofy_auth }

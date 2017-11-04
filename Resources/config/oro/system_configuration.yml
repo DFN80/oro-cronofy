@@ -19,7 +19,6 @@ system_configuration:
                 label:          dfn_oro_cronofy.form.client_id
                 tooltip:        dfn_oro_cronofy.form.tooltip.client_id
                 required: true
-                resettable: false
         dfn_oro_cronofy.client_secret:
             data_type: string
             type: text
@@ -28,7 +27,6 @@ system_configuration:
                 label:          dfn_oro_cronofy.form.client_secret
                 tooltip:        dfn_oro_cronofy.form.tooltip.client_secret
                 required: true
-                resettable: false
         dfn_oro_cronofy.access_token:
             data_type: string
             type: text
@@ -40,7 +38,7 @@ system_configuration:
                 resettable: false
                 disabled: true
         dfn_oro_cronofy.oauth_connect:
-            type: dfn_oro_cronofy_auth_button
+            type: dfn_oro_cronofy_auth
             ui_only: true
             options:
                 label: false
@@ -61,12 +59,25 @@ system_configuration:
                                         children:
                                             - dfn_oro_cronofy.client_id
                                             - dfn_oro_cronofy.client_secret
-        user_configuration:
+        organization_configuration:
             platform:
                 children:
                     integrations:
                         children:
                             cronofy_settings:
+                                priority: -10
+                                children:
+                                    cronofy_api:
+                                        priority: 80
+                                        children:
+                                            - dfn_oro_cronofy.client_id
+                                            - dfn_oro_cronofy.client_secret
+        user_configuration:
+            platform:
+                children:
+                    integrations:
+                        children:
+                            cronofy_user_settings:
                                 priority: -10
                                 children:
                                     cronofy_user:

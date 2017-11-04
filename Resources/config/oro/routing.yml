@@ -1,0 +1,4 @@
+dfn_oro_cronofy_bundle:
+    resource:     "@DfnOroCronofyBundle/Controller"
+    type:         annotation
+    prefix:       /cronofy
