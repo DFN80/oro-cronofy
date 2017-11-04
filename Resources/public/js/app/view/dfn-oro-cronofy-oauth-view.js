@@ -19,11 +19,9 @@ define(function(require) {
         attributes: {"type": "button", "class": "btn"},
         authUrl: null,
         scope: "read_events create_event",
-        state: null,
 
         initialize: function (options) {
-            this.state = options.origin;
-            this.authUrl = "//app.cronofy.com/oauth/authorize?response_type=code&client_id="+options.clientId+"&redirect_uri="+options.redirectUrl+"&scope="+this.scope+"&state="+this.state;
+            this.authUrl = "//app.cronofy.com/oauth/authorize?response_type=code&client_id="+options.clientId+"&redirect_uri="+options.redirectUrl+"&scope="+this.scope;
             this.$el.html(__('dfn.oro_cronofy.oauth.connect'));
         },
         events: {

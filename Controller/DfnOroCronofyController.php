@@ -23,7 +23,7 @@ class DfnOroCronofyController extends Controller
         //Use the code to create a request for the users access and refresh tokens.
         //Need to create a API service to connect to cronofy API and use that.
         $code = $request->query->get('code');
-        $state = $request->query->get('state');
+        $state = $request->getSchemeAndHttpHost();
 
         return new Response("<script>window.opener.postMessage('$code', '$state');window.close();</script>");
     }
