@@ -4,6 +4,11 @@ system_configuration:
             title: dfn_oro_cronofy.form.cronofy_settings
             icon:  fa-calendar
 
+        cronofy_user_settings:
+            title: dfn_oro_cronofy.form.cronofy_settings
+            icon:  fa-calendar-o
+            configurator: '@dfn_oro_cronofy.configurator.user_settings_configurator::configure'
+
         cronofy_api:
             title: dfn_oro_cronofy.form.api_settings
 
@@ -34,6 +39,24 @@ system_configuration:
             options:
                 label:          dfn_oro_cronofy.form.access_token
                 tooltip:        dfn_oro_cronofy.form.tooltip.access_token
+                required: true
+                resettable: false
+                disabled: true
+        dfn_oro_cronofy.refresh_token:
+            data_type: string
+            type: text
+            priority: 70
+            options:
+                label:          dfn_oro_cronofy.form.refresh_token
+                required: true
+                resettable: false
+                disabled: true
+        dfn_oro_cronofy.calendar_id:
+            data_type: string
+            type: text
+            priority: 60
+            options:
+                label:          dfn_oro_cronofy.form.calendar_id
                 required: true
                 resettable: false
                 disabled: true
@@ -84,4 +107,6 @@ system_configuration:
                                         priority: 80
                                         children:
                                             - dfn_oro_cronofy.access_token
+                                            - dfn_oro_cronofy.refresh_token
+                                            - dfn_oro_cronofy.calendar_id
                                             - dfn_oro_cronofy.oauth_connect

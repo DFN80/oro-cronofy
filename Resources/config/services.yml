@@ -1,8 +1,12 @@
 parameters:
     dfn_oro_cronofy.form.type.dfn_oro_conofy_auth.class:    Dfn\Bundle\OroCronofyBundle\Form\Type\CronofyAuthType
+    dfn_oro_cronofy.cronofy_oauth2_manager.class:           Dfn\Bundle\OroCronofyBundle\Manager\CronofyOauth2Manager
+    dfn_oro_cronofy.cronofy_oauth_resource_owner.class:     Dfn\Bundle\OroCronofyBundle\OAuth\ResourceOwner\CronofyResourceOwner
 
 services:
     dfn_oro_cronofy.form.type.dfn_oro_conofy_auth:
-        class: %dfn_oro_cronofy.form.type.dfn_oro_conofy_auth.class%
+        class: '%dfn_oro_cronofy.form.type.dfn_oro_conofy_auth.class%'
+        arguments:
+            - '@dfn_oro_cronofy.cronofy_oauth2_manager'
         tags:
             - { name: form.type, alias: dfn_oro_cronofy_auth }

@@ -6,6 +6,8 @@ dfn_oro_cronofy:
         client_secret:                  Client Secret
         calendar_sync:                  Calendar Synchronization
         access_token:                   Access Token
+        refresh_token:                  Refresh Token
+        calendar_id:                    Calendar Id
         auth_button:                    Connect to Cronofy
 
         tooltip:

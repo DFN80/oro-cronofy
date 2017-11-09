@@ -25,6 +25,8 @@ class Configuration implements ConfigurationInterface
                 'client_id' => ['value' => null],
                 'client_secret' => ['value' => null],
                 'access_token' => ['value' => null],
+                'refresh_token' => ['value' => null],
+                'calendar_id' => ['value' => null],
             ]
         );
 

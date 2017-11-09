@@ -1,8 +1,6 @@
 {% block dfn_oro_cronofy_auth_widget %}
     {% set options = {
-        'redirectUrl': absolute_url(path('dfn_oro_cronofy_oauth')),
-        'clientId': oro_config_value('dfn_oro_cronofy.client_id'),
-        'state': csrf_token('cronofy')
+        'authUrl': form.vars.url
     } %}
     <div data-page-component-module="dfnorocronofy/js/app/components/dfn-oro-cronofy-oauth-component"
          data-page-component-options="{{ options|json_encode }}">
@@ -16,7 +14,7 @@
                 </div>
             </div>
         </div>
-    <!-- </div> -->
+    </div>
 {% endblock %}
 
 {% block dfn_oro_cronofy_auth_row %}
