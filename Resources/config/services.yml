@@ -2,6 +2,7 @@ parameters:
     dfn_oro_cronofy.form.type.dfn_oro_conofy_auth.class:    Dfn\Bundle\OroCronofyBundle\Form\Type\CronofyAuthType
     dfn_oro_cronofy.cronofy_oauth2_manager.class:           Dfn\Bundle\OroCronofyBundle\Manager\CronofyOauth2Manager
     dfn_oro_cronofy.cronofy_api_manager.class:              Dfn\Bundle\OroCronofyBundle\Manager\CronofyAPIManager
+    dfn_oro_cronofy.calendar_origin_manager.class:          Dfn\Bundle\OroCronofyBundle\Manager\CalendarOriginManager
 
 services:
     dfn_oro_cronofy.form.type.dfn_oro_conofy_auth:
@@ -12,11 +13,6 @@ services:
             - '@security.token_storage'
         tags:
             - { name: form.type, alias: dfn_oro_cronofy_auth }
-
-    dfn_oro_cronofy.configurator.user_settings_configurator:
-          class: Dfn\Bundle\OroCronofyBundle\Form\Configurator\UserSettingsFormConfigurator
-          arguments:
-              - '@oro_config.organization'
 
     dfn_oro_cronofy.cronofy_oauth2_manager:
         class: '%dfn_oro_cronofy.cronofy_oauth2_manager.class%'
@@ -33,3 +29,10 @@ services:
             - '@security.csrf.token_manager'
             - '@router'
             - '@dfn_oro_cronofy.cronofy_oauth2_manager'
+
+    dfn_oro_cronofy.calendar_origin_manager:
+        class: '%dfn_oro_cronofy.calendar_origin_manager.class%'
+        arguments:
+            - '@dfn_oro_cronofy.cronofy_oauth2_manager'
+            - '@dfn_oro_cronofy.cronofy_api_manager'
+            - '@doctrine'
