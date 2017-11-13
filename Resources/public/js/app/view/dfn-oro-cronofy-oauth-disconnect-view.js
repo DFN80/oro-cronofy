@@ -14,7 +14,7 @@ define(function(require) {
     oauthView = BaseView.extend({
         autoRender: false,
         disconnectUrl: null,
-        disconnectConfirmUrl: null,
+        identifier: null,
         el: $('#oauth-disconnect'),
         events: {
             "click": "confirm"
@@ -22,7 +22,7 @@ define(function(require) {
 
         initialize: function (options) {
             this.disconnectUrl = options.disconnectUrl;
-            this.disconnectConfirmUrl = options.disconnectConfirmUrl;
+            this.identifier = options.identifier;
         },
 
         /**
@@ -33,7 +33,7 @@ define(function(require) {
             var confirmationDialog = new Modal({
                 title: 'Are you sure?',
                 okText: __('dfn.oro_cronofy.oauth.disconnect_confirm.ok'),
-                content: __('oro.workflow.confirmation_dialog.apply_date_confirmation.content'),
+                content: __('dfn.oro_cronofy.oauth.disconnect_confirm.content', {calendar: this.identifier}),
                 className: 'modal oro-modal-normal',
                 okButtonClass: 'btn-primary btn-large'
             });

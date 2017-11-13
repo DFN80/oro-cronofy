@@ -4,4 +4,6 @@ dfn:
             connect: Connect to Cronofy
             disconnect_confirm:
                 ok: Yes, Disconnect
-                cancel: Cancel
+                content: Are you sure you want to disconnect - {{ calendar }}?
+
+"Error disconnecting calendar.": "Error disconnecting calendar."

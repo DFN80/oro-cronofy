@@ -18,7 +18,8 @@
         {% else %}
             {# Load Disconnect Component #}
             {% set options = {
-                'disconnectUrl': path('dfn_oro_cronofy_oauth_disconnect', {'id': calendarOrigin.id})
+                'disconnectUrl': path('dfn_oro_cronofy_oauth_disconnect', {'id': calendarOrigin.id}),
+                'identifier': calendarOrigin.identifier
             } %}
             <div data-page-component-module="dfnorocronofy/js/app/components/dfn-oro-cronofy-oauth-disconnect-component"
                  data-page-component-options="{{ options|json_encode }}">
