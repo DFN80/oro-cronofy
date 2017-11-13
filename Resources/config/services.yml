@@ -1,12 +1,35 @@
 parameters:
     dfn_oro_cronofy.form.type.dfn_oro_conofy_auth.class:    Dfn\Bundle\OroCronofyBundle\Form\Type\CronofyAuthType
     dfn_oro_cronofy.cronofy_oauth2_manager.class:           Dfn\Bundle\OroCronofyBundle\Manager\CronofyOauth2Manager
-    dfn_oro_cronofy.cronofy_oauth_resource_owner.class:     Dfn\Bundle\OroCronofyBundle\OAuth\ResourceOwner\CronofyResourceOwner
+    dfn_oro_cronofy.cronofy_api_manager.class:              Dfn\Bundle\OroCronofyBundle\Manager\CronofyAPIManager
 
 services:
     dfn_oro_cronofy.form.type.dfn_oro_conofy_auth:
         class: '%dfn_oro_cronofy.form.type.dfn_oro_conofy_auth.class%'
         arguments:
             - '@dfn_oro_cronofy.cronofy_oauth2_manager'
+            - '@doctrine'
+            - '@security.token_storage'
         tags:
             - { name: form.type, alias: dfn_oro_cronofy_auth }
+
+    dfn_oro_cronofy.configurator.user_settings_configurator:
+          class: Dfn\Bundle\OroCronofyBundle\Form\Configurator\UserSettingsFormConfigurator
+          arguments:
+              - '@oro_config.organization'
+
+    dfn_oro_cronofy.cronofy_oauth2_manager:
+        class: '%dfn_oro_cronofy.cronofy_oauth2_manager.class%'
+        arguments:
+            - '@oro_config.organization'
+            - '@doctrine'
+            - '@security.csrf.token_manager'
+            - '@router'
+
+    dfn_oro_cronofy.cronofy_api_manager:
+        class: '%dfn_oro_cronofy.cronofy_api_manager.class%'
+        arguments:
+            - '@oro_config.organization'
+            - '@security.csrf.token_manager'
+            - '@router'
+            - '@dfn_oro_cronofy.cronofy_oauth2_manager'

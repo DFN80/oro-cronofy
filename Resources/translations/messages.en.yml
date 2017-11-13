@@ -9,6 +9,8 @@ dfn_oro_cronofy:
         refresh_token:                  Refresh Token
         calendar_id:                    Calendar Id
         auth_button:                    Connect to Cronofy
+        not_connected:                  Cronofy integration is not configured. Contact your administrator.
+        disconnect:                     Disconnect Calendar
 
         tooltip:
             client_id:                  Enter Cronofy Client ID

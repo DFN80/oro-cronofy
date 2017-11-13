@@ -13,29 +13,46 @@ define(function(require) {
 
     oauthView = BaseView.extend({
         autoRender: true,
-        container: '.cronofy-oauth-holder',
+        container: '.cronofy-oauth-connect-holder',
         containerMethod: 'prepend',
         tagName: "button",
         attributes: {"type": "button", "class": "btn"},
-        authUrl: null,
+        connectUrl: null,
 
         initialize: function (options) {
-            this.authUrl = options.authUrl;
+            this.connectUrl = options.connectUrl;
             this.$el.html(__('dfn.oro_cronofy.oauth.connect'));
         },
         events: {
             "click": "open"
         },
 
+        /**
+         * Register listener for postMessage and open Cronofy Authenticate Page in new window.
+         */
         open: function () {
             //Add postmessage listener
             window.addEventListener("message", this.receiveMessage);
-            window.open(this.authUrl, 'oauth', 'width=500,height=870,menubar=no');
+            window.open(this.connectUrl, 'oauth', 'width=500,height=870,menubar=no');
         },
 
         receiveMessage: function (event) {
             //Do something with the data returned from the postmessage
             console.log(event);
+            mediator.execute(
+                'showFlashMessage',
+                'success',
+                'Synchronizing ' + event.data
+            );
+            mediator.execute('refreshPage');
+        },
+
+        /**
+         * Call un-register listener and then run parent remove method.
+         */
+        remove: function () {
+            window.removeEventListener("message", this.receiveMessage);
+            BaseView.prototype.remove.apply(this, arguments);
         }
 
     });

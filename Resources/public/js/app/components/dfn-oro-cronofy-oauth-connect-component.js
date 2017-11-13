@@ -7,7 +7,7 @@ define(function(require) {
 
     var oauthComponent;
     var BaseComponent = require('oroui/js/app/components/base/component');
-    var oauthView = require('dfnorocronofy/js/app/view/dfn-oro-cronofy-oauth-view');
+    var oauthView = require('dfnorocronofy/js/app/view/dfn-oro-cronofy-oauth-connect-view');
 
     oauthComponent = BaseComponent.extend({
         viewType: oauthView,
