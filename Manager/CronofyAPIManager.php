@@ -15,7 +15,6 @@ use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\VarDumper\VarDumper;
 
 use Dfn\Bundle\OroCronofyBundle\Entity\CalendarOrigin;
-use Dfn\Bundle\OroCronofyBundle\Manager\CronofyOauth2Manager;
 
 /**
  * Class CronofyAPIManager
@@ -42,8 +41,6 @@ class CronofyAPIManager
 
     /** @vay CronofyOauth2Manager */
     private $oauthManager;
-
-    //Put me some cronofy oauth manager here to get tokens
 
     /**
      * @param ConfigManager $configManager
@@ -87,21 +84,29 @@ class CronofyAPIManager
 
     /**
      * @param array $calendars
+     * @param string $primaryId
      * @return mixed
      */
-    public function getPrimaryCalendar(Array $calendars)
+    public function getPrimaryCalendar(Array $calendars, $primaryId)
     {
-        $primaryCalendar = array_filter($calendars, function ($calendar) {
-            return ($calendar['calendar_primary']);
-        });
+        if ($primaryId) {
+            //Get primary calendar based on passed primaryId
+            $primaryCalendar = array_filter($calendars, function ($calendar) use ($primaryId) {
+                return ($calendar['calendar_id'] == $primaryId);
+            });
+        } else {
+            //Get primary calendar based on cronofy listed primary
+            $primaryCalendar = array_filter($calendars, function ($calendar) {
+                return ($calendar['calendar_primary']);
+            });
+        }
 
         if (count($primaryCalendar) > 1 || count($primaryCalendar) === 0) {
             //Return false value when there's more then 1 primary or no primary, the user will need to make a selection.
-            VarDumper::dump('more then 1 or no primary found');
             return false;
         }
 
-        //Return the calendar marked as primary in the calendars array
+        //Return the primary calendar
         return reset($primaryCalendar);
 
     }
