@@ -2,24 +2,23 @@
 
 namespace Dfn\Bundle\OroCronofyBundle\Manager;
 
+use Dfn\Bundle\OroCronofyBundle\Entity\CalendarOrigin;
+use Dfn\Bundle\OroCronofyBundle\Exception\RefreshOAuthAccessTokenFailureException;
+
 use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManager;
 
 use Buzz\Message\MessageInterface;
-use Buzz\Client\ClientInterface;
 use Buzz\Client\Curl;
 use Buzz\Message\Request;
 use Buzz\Message\RequestInterface;
 use Buzz\Message\Response;
 
 use Oro\Bundle\ConfigBundle\Config\ConfigManager;
-use Oro\Bundle\ImapBundle\Entity\UserEmailOrigin;
-use Oro\Bundle\ImapBundle\Exception\RefreshOAuthAccessTokenFailureException;
 
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
-use Symfony\Component\VarDumper\VarDumper;
 
 /**
  * Class CronofyOauth2Manager
@@ -60,20 +59,18 @@ class CronofyOauth2Manager
     protected $clientSecret;
 
     /**
-     * @param ClientInterface $httpClient
      * @param ConfigManager $configManager
      * @param ManagerRegistry $doctrine
      * @param CsrfTokenManagerInterface $csrfTokenManager
      * @param RouterInterface $router
      */
     public function __construct(
-        ClientInterface $httpClient,
         ConfigManager $configManager,
         ManagerRegistry $doctrine,
         CsrfTokenManagerInterface $csrfTokenManager,
         RouterInterface $router
     ) {
-        $this->httpClient = $httpClient;
+        $this->httpClient = new Curl();
         $this->configManager = $configManager;
         $this->doctrine = $doctrine;
         $this->csrfTokenManager = $csrfTokenManager;
@@ -97,7 +94,7 @@ class CronofyOauth2Manager
             'scope' => self::OAUTH2_SCOPE,
             'state' => urlencode($this->state),
             'redirect_uri' =>
-                $this->router->generate('dfn_oro_cronofy_oauth', [], RouterInterface::ABSOLUTE_URL),
+                $this->router->generate('dfn_oro_cronofy_oauth_connect', [], RouterInterface::ABSOLUTE_URL),
         ], $extraParameters);
 
         return $this->normalizeUrl(self::OAUTH2_AUTHORIZATION_URL, $parameters);
@@ -128,7 +125,7 @@ class CronofyOauth2Manager
     {
         $parameters = [
             'redirect_uri' =>
-                $this->router->generate('dfn_oro_cronofy_oauth', [], RouterInterface::ABSOLUTE_URL),
+                $this->router->generate('dfn_oro_cronofy_oauth_connect', [], RouterInterface::ABSOLUTE_URL),
             'code' => $code,
             'grant_type' => 'authorization_code'
         ];
@@ -137,7 +134,6 @@ class CronofyOauth2Manager
         do {
             $attemptNumber++;
             $response = $this->doHttpRequest($parameters);
-            VarDumper::dump($response);
 
             $result = [
                 'access_token' => empty($response['access_token']) ? '' : $response['access_token'],
@@ -157,6 +153,88 @@ class CronofyOauth2Manager
         return $result;
     }
 
+
+    /**
+     * @param CalendarOrigin $origin
+     *
+     * @return string
+     */
+    public function getAccessTokenWithCheckingExpiration(CalendarOrigin $origin)
+    {
+        $token = $origin->getAccessToken();
+
+        //if token had been expired, the new one must be generated and saved to DB
+        if ($this->isAccessTokenExpired($origin)
+            && $this->configManager->get('oro_imap.enable_google_imap')
+            && $origin->getRefreshToken()
+        ) {
+            $this->refreshAccessToken($origin);
+
+            /** @var EntityManager $em */
+            $em = $this->doctrine->getManagerForClass(ClassUtils::getClass($origin));
+            $em->persist($origin);
+            $em->flush($origin);
+
+            $token = $origin->getAccessToken();
+        }
+
+        return $token;
+    }
+
+    /**
+     * @param CalendarOrigin $origin
+     *
+     * @return bool
+     */
+    public function isAccessTokenExpired(CalendarOrigin $origin)
+    {
+        $now = new \DateTime('now', new \DateTimeZone('UTC'));
+
+        return $now > $origin->getAccessTokenExpiresAt();
+    }
+
+    /**
+     * @param CalendarOrigin $origin
+     *
+     * @throws RefreshOAuthAccessTokenFailureException
+     */
+    public function refreshAccessToken(CalendarOrigin $origin)
+    {
+        $refreshToken = $origin->getRefreshToken();
+        if (empty($refreshToken)) {
+            throw new RefreshOAuthAccessTokenFailureException('The RefreshToken is empty', $refreshToken);
+        }
+
+        $parameters = [
+            'refresh_token' => $refreshToken,
+            'grant_type'    => 'refresh_token'
+        ];
+
+        $response = [];
+        $attemptNumber = 0;
+        while ($attemptNumber <= self::RETRY_TIMES && empty($response['access_token'])) {
+            $response = $this->doHttpRequest($parameters);
+            $attemptNumber++;
+        }
+
+        if (empty($response['access_token'])) {
+            $failureReason = '';
+            if (!empty($response['error'])) {
+                $failureReason .= $response['error'];
+            }
+            if (!empty($response['error_description'])) {
+                $failureReason .= sprintf(' (%s)', $response['error_description']);
+            }
+
+            throw new RefreshOAuthAccessTokenFailureException($failureReason, $refreshToken);
+        }
+
+        $origin->setAccessToken($response['access_token']);
+        $origin->setAccessTokenExpiresAt(
+            new \DateTime('+' . ((int)$response['expires_in'] - 5) . ' seconds', new \DateTimeZone('UTC'))
+        );
+    }
+
     /**
      * @param array $parameters
      *
@@ -173,7 +251,6 @@ class CronofyOauth2Manager
         ];
 
         $parameters = array_merge($contentParameters, $parameters);
-//        $content = http_build_query($parameters, '', '&');
         $content = json_encode($parameters);
         $headers = [
             'Content-length: ' . strlen($content),
@@ -183,7 +260,6 @@ class CronofyOauth2Manager
 
         $request->setHeaders($headers);
         $request->setContent($content);
-        VarDumper::dump($request);
 
         $this->httpClient->send($request, $response);
 
