@@ -7,7 +7,6 @@ system_configuration:
         cronofy_user_settings:
             title: dfn_oro_cronofy.form.cronofy_settings
             icon:  fa-calendar
-            configurator: '@dfn_oro_cronofy.configurator.user_settings_configurator::configure'
 
         cronofy_api:
             title: dfn_oro_cronofy.form.api_settings

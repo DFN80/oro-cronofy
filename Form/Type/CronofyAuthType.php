@@ -5,7 +5,6 @@ namespace Dfn\Bundle\OroCronofyBundle\Form\Type;
 use Dfn\Bundle\OroCronofyBundle\Manager\CronofyOauth2Manager;
 
 use Doctrine\Common\Persistence\ManagerRegistry;
-use Doctrine\Common\Util\ClassUtils;
 
 use Symfony\Component\Form\Extension\Core\Type\BaseType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
