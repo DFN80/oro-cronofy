@@ -11,7 +11,6 @@ define(function(require) {
 
     oauthComponent = BaseComponent.extend({
         viewType: oauthView,
-        view: null,
         /**
          * @constructor
          * @param {Object} options - provides oauth view with configuration

@@ -1,34 +1,36 @@
 {% block dfn_oro_cronofy_auth_widget %}
-    {% set options = {
-        'connectUrl': form.vars.connectUrl,
-        'disconnectUrl': path('dfn_oro_cronofy_oauth_disconnect')
-    } %}
     {% set calendarOrigin = form.vars.calendarOrigin %}
     {% if oro_config_value('dfn_oro_cronofy.client_id') and oro_config_value('dfn_oro_cronofy.client_secret')%}
         {% if not calendarOrigin %}
-        {# Load Connect Component #}
-        <div data-page-component-module="dfnorocronofy/js/app/components/dfn-oro-cronofy-oauth-connect-component"
-             data-page-component-options="{{ options|json_encode }}">
-            <div class="control-group">
-                <div class="controls">
-                    <div style="margin-top: 10px;" class="cronofy-oauth-connect-holder">
+            {% set options = {
+                'connectUrl': form.vars.connectUrl
+            } %}
+            {# Load Connect Component #}
+            <div data-page-component-module="dfnorocronofy/js/app/components/dfn-oro-cronofy-oauth-connect-component"
+                 data-page-component-options="{{ options|json_encode }}">
+                <div class="control-group">
+                    <div class="controls">
+                        <div style="margin-top: 10px;" class="cronofy-oauth-connect-holder">
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         {% else %}
-            {# Load Connected Component #}
-        <div data-page-component-module="dfnorocronofy/js/app/components/dfn-oro-cronofy-oauth-disconnect-component"
-             data-page-component-options="{{ options|json_encode }}">
-            <div class="control-group">
-                <div class="controls">
-                    <div style="margin-top: 10px;" class="cronofy-oauth-disconnect-holder">
+            {# Load Disconnect Component #}
+            {% set options = {
+                'disconnectUrl': path('dfn_oro_cronofy_oauth_disconnect', {'id': calendarOrigin.id})
+            } %}
+            <div data-page-component-module="dfnorocronofy/js/app/components/dfn-oro-cronofy-oauth-disconnect-component"
+                 data-page-component-options="{{ options|json_encode }}">
+                <div class="control-group">
+                    <div class="controls">
                         <div class="connection-status alert alert-success">Currently synchronizing <strong>{{ calendarOrigin.identifier }}</strong></div>
-                        <button type="button" class="btn btn-danger" id="oauth-disconnect">{{ 'dfn_oro_cronofy.form.disconnect'|trans }}</button>
+                        <div style="margin-top: 10px;" class="cronofy-oauth-disconnect-holder">
+                            <button type="button" class="btn btn-danger" id="oauth-disconnect">{{ 'dfn_oro_cronofy.form.disconnect'|trans }}</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         {% endif %}
     {% else %}
         {# Load Not Configured Message #}

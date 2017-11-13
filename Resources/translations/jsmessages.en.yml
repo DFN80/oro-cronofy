@@ -2,3 +2,6 @@ dfn:
     oro_cronofy:
         oauth:
             connect: Connect to Cronofy
+            disconnect_confirm:
+                ok: Yes, Disconnect
+                cancel: Cancel

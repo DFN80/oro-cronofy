@@ -8,6 +8,7 @@ use Dfn\Bundle\OroCronofyBundle\Entity\CalendarOrigin;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -54,18 +55,18 @@ class OauthController extends Controller
             $calendarOrigin = new CalendarOrigin();
             $calendarOrigin->setOwner($this->getUser());
             $calendarOrigin->setOrganization($this->getUser()->getOrganization());
-            $calendarOrigin->setAccessToken($response['access_token']);
-            $calendarOrigin->setRefreshToken($response['refresh_token']);
-            $calendarOrigin->setAccessTokenExpiresAt(
-                new \DateTime('+'.((int)$response['expires_in'] - 5).' seconds', new \DateTimeZone('UTC'))
-            );
             //$calendarOrigin->($results['access_token']); ACCOUNT ID
-            $calendarOrigin->setAccessToken($response['access_token']);
             $calendarOrigin->setScope($response['scope']);
             $calendarOrigin->setProviderName($response['provider_name']);
             $calendarOrigin->setProfileId($response['profile_id']);
             $calendarOrigin->setProfileName($response['profile_name']);
         }
+
+        $calendarOrigin->setAccessToken($response['access_token']);
+        $calendarOrigin->setRefreshToken($response['refresh_token']);
+        $calendarOrigin->setAccessTokenExpiresAt(
+            new \DateTime('+'.((int)$response['expires_in'] - 5).' seconds', new \DateTimeZone('UTC'))
+        );
 
         //Get users primary calendar
         //User API service to get users primary calendar
@@ -88,30 +89,21 @@ class OauthController extends Controller
     }
 
     /**
-     * @Route("/oauth/disconnect", name="dfn_oro_cronofy_oauth_disconnect")
-     * @Template
-     * @param $request Request
-     * @return array
+     * @Route("/oauth/disconnect/{id}", name="dfn_oro_cronofy_oauth_disconnect")
+     * @param $id integer
+     * @return JsonResponse
      */
-    public function disconnectAction(Request $request)
+    public function disconnectAction($id)
     {
-        VarDumper::dump('test');
-        die;
         $em = $this->getDoctrine()->getManager();
         $repo = $em->getRepository('DfnOroCronofyBundle:CalendarOrigin');
-        //Load active calendar origin for current user if one
-        $calendarOrigin = $repo->findOneBy(
-            [
-                'owner' => $this->getUser(),
-                'isActive' => true
-            ]
-        );
+        $calendarOrigin = $repo->find($id);
 
         //Set users currently active calendar origin to not active
         $calendarOrigin->setActive(false);
         $em->persist($calendarOrigin);
         $em->flush();
 
-        return ['calendarOrigin' => $calendarOrigin];
+        return new JsonResponse(['identifier' => $calendarOrigin->getIdentifier()]);
     }
 }
