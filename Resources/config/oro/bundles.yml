@@ -1,2 +1,2 @@
 bundles:
-    - { name: Dfn\Bundle\OroCronofyBundle\DfnOroCronofyBundle}
+    - { name: Dfn\Bundle\OroCronofyBundle\DfnOroCronofyBundle, priority: 900 }
