@@ -2,6 +2,7 @@
 
 namespace Dfn\Bundle\OroCronofyBundle\Manager;
 
+use Buzz\Exception\RequestException;
 use Buzz\Message\MessageInterface;
 use Buzz\Client\Curl;
 use Buzz\Message\Request;
@@ -12,7 +13,6 @@ use Oro\Bundle\ConfigBundle\Config\ConfigManager;
 
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
-use Symfony\Component\VarDumper\VarDumper;
 
 use Dfn\Bundle\OroCronofyBundle\Entity\CalendarOrigin;
 
@@ -26,6 +26,7 @@ class CronofyAPIManager
     const ROOT_PATH = 'https://api.cronofy.com';
     const API_VERSION = 'v1';
     const CALENDAR_PATH = 'calendars';
+    const EVENTS_PATH = 'events';
 
     /** @var Curl */
     protected $httpClient;
@@ -111,6 +112,24 @@ class CronofyAPIManager
 
     }
 
+    public function createOrUpdateEvent(CalendarOrigin $calendarOrigin, $parameters)
+    {
+        $path = self::ROOT_PATH . '/' . self::API_VERSION . '/' . self::CALENDAR_PATH . '/'
+            . $calendarOrigin->getCalendarId() . '/' . self::EVENTS_PATH;
+
+        return $this->doHttpRequest($calendarOrigin, $path, RequestInterface::METHOD_POST, $parameters);
+
+    }
+
+    public function deleteEvent(CalendarOrigin $calendarOrigin, $parameters)
+    {
+        $path = self::ROOT_PATH . '/' . self::API_VERSION . '/' . self::CALENDAR_PATH . '/'
+            . $calendarOrigin->getCalendarId() . '/' . self::EVENTS_PATH;
+
+        return $this->doHttpRequest($calendarOrigin, $path, RequestInterface::METHOD_DELETE, $parameters);
+
+    }
+
     /**
      * @param CalendarOrigin $origin
      * @param string $path
@@ -124,18 +143,25 @@ class CronofyAPIManager
         $request = new Request($method, $path);
         $response = new Response();
 
-        $content = json_encode($parameters);
-        $headers = [
-//            'Content-length: ' . strlen($content),
-//            'content-type: application/json; charset=utf-8',
-            'Authorization: Bearer '.$this->oauthManager->getAccessTokenWithCheckingExpiration($origin)
-        ];
+        //Only set content and content headers for requests with parameters.
+        if (!empty($parameters)) {
+            $content = json_encode($parameters);
+            $headers = [
+                'Content-length: ' . strlen($content),
+                'content-type: application/json; charset=utf-8',
+            ];
+            $request->setContent($content);
+        }
+
+        $headers[] = 'Authorization: Bearer '.$this->oauthManager->getAccessTokenWithCheckingExpiration($origin);
 
         $request->setHeaders($headers);
-//        $request->setContent($content);
-        VarDumper::dump($request);
 
-        $this->httpClient->send($request, $response, [CURLOPT_TIMEOUT => '10']);
+        $this->httpClient->send($request, $response);
+
+        if (!$response->isSuccessful()) {
+            throw new RequestException('Cronofy API Call Failed.');
+        }
 
         return $this->getResponseContent($response);
     }
