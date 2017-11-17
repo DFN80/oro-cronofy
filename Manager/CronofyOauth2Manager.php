@@ -164,9 +164,7 @@ class CronofyOauth2Manager
         $token = $origin->getAccessToken();
 
         //if token had been expired, the new one must be generated and saved to DB
-        if ($this->isAccessTokenExpired($origin)
-            && $this->configManager->get('oro_imap.enable_google_imap')
-            && $origin->getRefreshToken()
+        if ($this->isAccessTokenExpired($origin) && $origin->getRefreshToken()
         ) {
             $this->refreshAccessToken($origin);
 
