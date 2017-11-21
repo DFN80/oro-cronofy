@@ -3,9 +3,13 @@
 namespace Dfn\Bundle\OroCronofyBundle\EventListener;
 
 use Dfn\Bundle\OroCronofyBundle\Async\Topics;
+use Dfn\Bundle\OroCronofyBundle\Manager\CronofyPushHandler;
+
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
+
+use Oro\Bundle\PlatformBundle\EventListener\OptionalListenerInterface;
 use Oro\Bundle\CalendarBundle\Entity\Attendee;
 use Oro\Bundle\CalendarBundle\Entity\CalendarEvent;
 use Oro\Component\MessageQueue\Client\MessageProducerInterface;
@@ -14,10 +18,16 @@ use Oro\Component\MessageQueue\Client\MessageProducerInterface;
  * Class CalendarEventListener
  * @package AE\Bundle\CampaignBundle\EventListener
  */
-class CalendarEventListener
+class CalendarEventListener implements OptionalListenerInterface
 {
-    /** @var MessageProducerInterface  */
+    /** @var MessageProducerInterface */
     private $messageProducer;
+
+    /** @var CronofyPushHandler */
+    private $cronofyPushHandler;
+
+    /** @var bool */
+    protected $enabled = true;
 
     /** @var array */
     private $createdEvents = [];
@@ -32,9 +42,10 @@ class CalendarEventListener
      * CalendarEventListener constructor.
      * @param MessageProducerInterface $messageProducer
      */
-    public function __construct(MessageProducerInterface $messageProducer)
+    public function __construct(MessageProducerInterface $messageProducer, CronofyPushHandler $cronofyPushHandler)
     {
         $this->messageProducer = $messageProducer;
+        $this->cronofyPushHandler = $cronofyPushHandler;
     }
 
     /**
@@ -42,6 +53,10 @@ class CalendarEventListener
      */
     public function onFlush(OnFlushEventArgs $args)
     {
+        if (!$this->enabled) {
+            return;
+        }
+
         $em = $args->getEntityManager();
         $uow = $em->getUnitOfWork();
 
@@ -77,20 +92,24 @@ class CalendarEventListener
 
         //Build array of created events to be sent to message queue
         foreach ($createdEvents as $entity) {
-            //Confirm there's an active calendar origin for created event, no need to send messages for those
-            if (!$this->checkOrigin($em, $entity)) {
+            //Confirm there's an active calendar origin for created event, no need to send messages if not
+            $origin = $this->checkOrigin($em, $entity);
+            if (!$origin) {
                 continue;
             }
+
             $this->createdEvents[$entity->getId()] = $entity;
         }
 
         //Build array of updated events to be sent to message queue
         foreach ($updatedEvents as $entity) {
-            //Confirm there's an active calendar origin for updated event, no need to send messages for those
-            if (!$this->checkOrigin($em, $entity)) {
+            //Confirm there's an active calendar origin for updated event, no need to send messages if not
+            $origin = $this->checkOrigin($em, $entity);
+            if (!$origin) {
                 continue;
             }
 
+            //Event already has record of sync with Cronofy, send update message.
             $this->updatedEvents[$entity->getId()] = $uow->getEntityChangeSet($entity);
             $this->setAttendeeChanges($entity, "invite", $createdAttendees);
             $this->setAttendeeChanges($entity, "remove", $deletedAttendees);
@@ -98,19 +117,21 @@ class CalendarEventListener
 
         //Build array of deleted events to be sent to message queue
         foreach ($deletedEvents as $entity) {
-            //Confirm there's an active calendar origin for deleted event, no need to send messages for those
+            //Confirm there's an active calendar origin for deleted event, no need to send messages if not
             $origin = $this->checkOrigin($em, $entity);
             if (!$origin) {
                 continue;
             }
 
-            //Check if external and set external id if so
-
-            $this->deletedEvents[] = [
-                'id' => $entity->getId(),
-                'class' => get_class($entity),
-                'origin_id' => $origin->getId()
-            ];
+            //Check if we've previously synced with Cronofy, get proper id if so and include for deleted messages.
+            $event_id = $this->cronofyPushHandler->getCronofyEventId($origin, $entity->getId());
+            if ($event_id) {
+                $this->deletedEvents[] = [
+                    'id' => $event_id,
+                    'class' => get_class($entity),
+                    'origin_id' => $origin->getId()
+                ];
+            }
         }
     }
 
@@ -135,6 +156,10 @@ class CalendarEventListener
      */
     public function postFlush(PostFlushEventArgs $args)
     {
+        if (!$this->enabled) {
+            return;
+        }
+
         //Convert event updates to push message format.
         if ($this->updatedEvents) {
             $updatedMessages = $this->getUpdateMessages();
@@ -152,7 +177,6 @@ class CalendarEventListener
         }
 
         //Clear properties in the case of multiple flush events
-        $bob = 1;
         $this->createdEvents = [];
         $this->updatedEvents = [];
     }
@@ -173,7 +197,7 @@ class CalendarEventListener
         foreach ($this->updatedEvents as $id => $event) {
             $message = [];
             foreach ($event as $property => $value) {
-                if (in_array($property, $supportedPropertiesMap) && $value[0] != $value[1]) {
+                if (array_key_exists($property, $supportedPropertiesMap) && $value[0] != $value[1]) {
                     //Convert datetime objects to proper string format
                     if ($value[1] instanceof \DateTime) {
                         $message[$supportedPropertiesMap[$property]] = $value[1]->format('Y-m-d\TH:i:s\Z');
@@ -253,5 +277,13 @@ class CalendarEventListener
                 ];
             }
         }
+    }
+
+    /**
+     * @param boolean $enabled
+     */
+    public function setEnabled($enabled = true)
+    {
+        $this->enabled = $enabled;
     }
 }
