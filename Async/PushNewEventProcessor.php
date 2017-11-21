@@ -15,7 +15,7 @@ class PushNewEventProcessor extends SingleBaseProcessor
      */
     public function process(MessageInterface $message, SessionInterface $session)
     {
-        $this->setPushMethod('pushNewEvent');
+        $this->setMethod('pushNewEvent');
         return parent::process($message, $session);
     }
 

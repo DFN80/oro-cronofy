@@ -5,17 +5,17 @@ use Oro\Component\MessageQueue\Transport\MessageInterface;
 use Oro\Component\MessageQueue\Transport\SessionInterface;
 
 /**
- * Class PushDeletedEventProcessor
+ * Class CreateEventProcessor
  * @package Dfn\Bundle\OroCronofyBundle\Async
  */
-class PushDeletedEventProcessor extends SingleBaseProcessor
+class CreateEventProcessor extends SingleBaseProcessor
 {
     /**
      * {@inheritdoc}
      */
     public function process(MessageInterface $message, SessionInterface $session)
     {
-        $this->setMethod('pushDeletedEvent');
+        $this->setMethod('createOrUpdateEvent');
         return parent::process($message, $session);
     }
 
@@ -24,6 +24,6 @@ class PushDeletedEventProcessor extends SingleBaseProcessor
      */
     public static function getSubscribedTopics()
     {
-        return [Topics::PUSH_DELETED_EVENT];
+        return [Topics::CREATE_EVENT];
     }
 }

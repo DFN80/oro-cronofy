@@ -52,7 +52,7 @@ class MultipleBaseProcessor implements MessageProcessorInterface, TopicSubscribe
             return self::REJECT;
         }
 
-        //Create a push new event message foreach event in array. This way if one fails it can be individually re-queued
+        //Create a new message foreach message in an array. This way if one fails it can be individually re-queued
         foreach ($data as $event) {
             $this->messageProducer->send($this->singleTopic, json_encode($event));
         }

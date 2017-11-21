@@ -1,8 +1,6 @@
 <?php
 namespace Dfn\Bundle\OroCronofyBundle\Async;
 
-use Dfn\Bundle\OroCronofyBundle\Manager\CronofyPushHandler;
-
 use Psr\Log\LoggerInterface;
 
 use Oro\Component\MessageQueue\Client\TopicSubscriberInterface;
@@ -20,21 +18,22 @@ class SingleBaseProcessor implements MessageProcessorInterface, TopicSubscriberI
     /** @var LoggerInterface */
     private $logger;
 
-    /** @var CronofyPushHandler  */
-    private $pushHandler;
+    /** @var object  */
+    private $handler;
 
     /** @var string */
-    private $pushMethod;
+    private $method;
 
     /**
      * @param LoggerInterface $logger
+     * @param object $handler
      */
     public function __construct(
         LoggerInterface $logger,
-        CronofyPushHandler $pushHandler
+        $handler
     ) {
         $this->logger = $logger;
-        $this->pushHandler = $pushHandler;
+        $this->handler = $handler;
     }
 
     /**
@@ -44,7 +43,7 @@ class SingleBaseProcessor implements MessageProcessorInterface, TopicSubscriberI
     {
         $data = JSON::decode($message->getBody());
 
-        if (!isset($data['id'])) {
+        if (!count($data)) {
             $this->logger->critical(
                 sprintf('Got invalid message. "%s"', $message->getBody()),
                 ['message' => $message]
@@ -53,13 +52,14 @@ class SingleBaseProcessor implements MessageProcessorInterface, TopicSubscriberI
             return self::REJECT;
         }
 
-        //Push message to cronofy
+        //Process message via the injected handler and set method
         try {
-            $this->pushHandler->{$this->pushMethod}($data);
+            $this->handler->{$this->method}($data);
         } catch (\Exception $e) {
             var_dump('error');
-            $this->logger->critical('Sending event to Cronofy failed.');
-            //Check # of attempts, if greater the X log full message and don't requeue
+            $this->logger->critical('Failed processing Cronofy message. ' . $e->getMessage());
+            $this->logger->critical($e);
+            //TODO Check # of attempts, if greater the X log full message and don't requeue
             return self::REQUEUE;
         }
 
@@ -75,8 +75,11 @@ class SingleBaseProcessor implements MessageProcessorInterface, TopicSubscriberI
         return false;
     }
 
-    protected function setPushMethod($pushMethod)
+    /**
+     * @param string $method
+     */
+    protected function setMethod($method)
     {
-        $this->pushMethod = $pushMethod;
+        $this->method = $method;
     }
 }

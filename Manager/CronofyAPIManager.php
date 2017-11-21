@@ -27,6 +27,9 @@ class CronofyAPIManager
     const API_VERSION = 'v1';
     const CALENDAR_PATH = 'calendars';
     const EVENTS_PATH = 'events';
+    const CHANNELS_PATH = 'channels';
+    const ELEVATE_PATH = 'permissions';
+    const DATE_FORMAT = 'Y-m-d\TH:i:s\Z';
 
     /** @var Curl */
     protected $httpClient;
@@ -112,6 +115,11 @@ class CronofyAPIManager
 
     }
 
+    /**
+     * @param CalendarOrigin $calendarOrigin
+     * @param $parameters
+     * @return array
+     */
     public function createOrUpdateEvent(CalendarOrigin $calendarOrigin, $parameters)
     {
         $path = self::ROOT_PATH . '/' . self::API_VERSION . '/' . self::CALENDAR_PATH . '/'
@@ -121,6 +129,11 @@ class CronofyAPIManager
 
     }
 
+    /**
+     * @param CalendarOrigin $calendarOrigin
+     * @param $parameters
+     * @return array
+     */
     public function deleteEvent(CalendarOrigin $calendarOrigin, $parameters)
     {
         $path = self::ROOT_PATH . '/' . self::API_VERSION . '/' . self::CALENDAR_PATH . '/'
@@ -131,6 +144,106 @@ class CronofyAPIManager
     }
 
     /**
+     * @param CalendarOrigin $calendarOrigin
+     * @param \DateTime|null $from
+     * @param \DateTime|null $to
+     * @param \DateTime|null $lastModified
+     * @return array
+     */
+    public function readEvents(
+        CalendarOrigin $calendarOrigin,
+        \DateTime $from = null,
+        \DateTime $to = null,
+        \DateTime $lastModified = null
+    ) {
+        $query = [
+            'tzid' => 'Etc/UTC',
+            'include_deleted' => 1,
+            'include_moved' => 1,
+            'include_managed' => 1,
+            'calendar_ids' => [
+                $calendarOrigin->getCalendarId()
+            ]
+        ];
+
+        if ($from) {
+            $query['from'] = $from->format(self::DATE_FORMAT);
+        }
+
+        if ($to) {
+            $query['to'] = $to->format(self::DATE_FORMAT);
+        }
+
+        if ($lastModified) {
+            $query['last_modified'] = $lastModified->format(self::DATE_FORMAT);
+        }
+
+        $query = http_build_query($query);
+        $query = preg_replace('/%5B[0-9]+%5D/simU', '%5B%5D', $query);
+
+        $path = self::ROOT_PATH . '/' . self::API_VERSION . '/' . self::EVENTS_PATH . '?' . $query;
+
+        return $this->doHttpRequest($calendarOrigin, $path, RequestInterface::METHOD_GET);
+    }
+
+    /**
+     * @param CalendarOrigin $calendarOrigin
+     * @return array
+     */
+    public function createChannel(CalendarOrigin $calendarOrigin)
+    {
+        $path = self::ROOT_PATH . '/' . self::API_VERSION . '/' . self::CHANNELS_PATH;
+
+        $parameters = [
+            "callback_url" =>
+                $this->router->generate('dfn_oro_cronofy_notification', [], RouterInterface::ABSOLUTE_URL),
+            "filters" => [
+                "calendar_ids" => [$calendarOrigin->getCalendarId()],
+                "only_managed" => false
+            ]
+        ];
+
+        //TODO REMOVE Temporary for testing
+        $parameters['callback_url'] = "https://requestb.in/1gegx281";
+
+        return $this->doHttpRequest($calendarOrigin, $path, RequestInterface::METHOD_POST, $parameters);
+    }
+
+    /**
+     * @param CalendarOrigin $calendarOrigin
+     * @return array
+     */
+    public function closeChannel(CalendarOrigin $calendarOrigin)
+    {
+        $path = self::ROOT_PATH . '/' . self::API_VERSION . '/' . self::CHANNELS_PATH . '/' .
+            $calendarOrigin->getChannelId();
+
+        return $this->doHttpRequest($calendarOrigin, $path, RequestInterface::METHOD_DELETE);
+    }
+
+    public function getElevateUrl(CalendarOrigin $calendarOrigin)
+    {
+        $path = self::ROOT_PATH . '/' . self::API_VERSION . '/' . self::ELEVATE_PATH;
+
+        $parameters = [
+            "permissions" => [
+                [
+                    "calendar_id" => $calendarOrigin->getCalendarId(),
+                    "permission_level" => "unrestricted"
+                ]
+            ],
+            "redirect_uri" =>
+                $this->router->generate(
+                    'dfn_oro_cronofy_oauth_elevate_complete',
+                    ["originId" => $calendarOrigin->getId()],
+                    RouterInterface::ABSOLUTE_URL
+                )
+        ];
+
+        return $this->doHttpRequest($calendarOrigin, $path, RequestInterface::METHOD_POST, $parameters);
+    }
+
+    /**
      * @param CalendarOrigin $origin
      * @param string $path
      * @param string $method
@@ -138,7 +251,7 @@ class CronofyAPIManager
      *
      * @return array
      */
-    protected function doHttpRequest(CalendarOrigin $origin, $path, $method, $parameters = [])
+    public function doHttpRequest(CalendarOrigin $origin, $path, $method, $parameters = [])
     {
         $request = new Request($method, $path);
         $response = new Response();

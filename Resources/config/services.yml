@@ -5,6 +5,8 @@ parameters:
     dfn_oro_cronofy.calendar_origin_manager.class:          Dfn\Bundle\OroCronofyBundle\Manager\CalendarOriginManager
     dfn_oro_cronofy.event_listener.event.class:             Dfn\Bundle\OroCronofyBundle\EventListener\CalendarEventListener
     dfn_oro_cronofy.push_handler.class:                     Dfn\Bundle\OroCronofyBundle\Manager\CronofyPushHandler
+    dfn_oro_cronofy.notification_handler.class:             Dfn\Bundle\OroCronofyBundle\Manager\CronofyNotificationHandler
+    dfn_oro_cronofy.event_handler.class:                    Dfn\Bundle\OroCronofyBundle\Manager\CronofyEventHandler
 
 services:
     dfn_oro_cronofy.form.type.dfn_oro_conofy_auth:
@@ -19,7 +21,7 @@ services:
     dfn_oro_cronofy.cronofy_oauth2_manager:
         class: '%dfn_oro_cronofy.cronofy_oauth2_manager.class%'
         arguments:
-            - '@oro_config.organization'
+            - '@oro_config.global'
             - '@doctrine'
             - '@security.csrf.token_manager'
             - '@router'
@@ -27,7 +29,7 @@ services:
     dfn_oro_cronofy.cronofy_api_manager:
         class: '%dfn_oro_cronofy.cronofy_api_manager.class%'
         arguments:
-            - '@oro_config.organization'
+            - '@oro_config.global'
             - '@security.csrf.token_manager'
             - '@router'
             - '@dfn_oro_cronofy.cronofy_oauth2_manager'
@@ -43,6 +45,7 @@ services:
         class: "%dfn_oro_cronofy.event_listener.event.class%"
         arguments:
             - '@oro_message_queue.message_producer'
+            - '@dfn_oro_cronofy.push_handler'
         tags:
             - { name: doctrine.event_listener, event: onFlush }
             - { name: doctrine.event_listener, event: postFlush }
@@ -100,3 +103,41 @@ services:
         arguments:
             - '@doctrine'
             - '@dfn_oro_cronofy.cronofy_api_manager'
+
+    dfn_oro_cronofy.notification_handler:
+        class: '%dfn_oro_cronofy.notification_handler.class%'
+        arguments:
+            - '@doctrine'
+            - '@dfn_oro_cronofy.cronofy_api_manager'
+            - '@oro_message_queue.message_producer'
+
+    dfn_oro_cronofy.async.notification_processor:
+        class: Dfn\Bundle\OroCronofyBundle\Async\NotificationProcessor
+        arguments:
+            - '@logger'
+            - '@dfn_oro_cronofy.notification_handler'
+        tags:
+            - { name: oro_message_queue.client.message_processor }
+
+    dfn_oro_cronofy.event_handler:
+        class: '%dfn_oro_cronofy.event_handler.class%'
+        arguments:
+            - '@doctrine'
+            - '@dfn_oro_cronofy.cronofy_api_manager'
+            - '@dfn_oro_cronofy.event_listener.event'
+
+    dfn_oro_cronofy.async.create_events_processor:
+        class: Dfn\Bundle\OroCronofyBundle\Async\CreateEventsProcessor
+        arguments:
+            - '@logger'
+            - '@oro_message_queue.message_producer'
+        tags:
+            - { name: oro_message_queue.client.message_processor }
+
+    dfn_oro_cronofy.async.create_event_processor:
+        class: Dfn\Bundle\OroCronofyBundle\Async\CreateEventProcessor
+        arguments:
+            - '@logger'
+            - '@dfn_oro_cronofy.event_handler'
+        tags:
+            - { name: oro_message_queue.client.message_processor }
