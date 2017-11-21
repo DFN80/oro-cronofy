@@ -38,22 +38,45 @@ system_configuration:
                 label: false
                 required: false
                 resettable: false
+        dfn_oro_cronofy.reminder:
+            data_type: integer
+            type: choice
+            options:
+                label: "Reminder"
+                tooltip: "Reminder time to be sent with each calendar event created in the CRM."
+                choices:
+                    0:      0 Minutes
+                    5:      5 Minutes
+                    10:     10 Minutes
+                    15:     50 Minutes
+                    30:     30 Minutes
+                    45:     45 Minutes
+                    60:     1 Hour
+                    90:     1.5 Hours
+                    120:    2 Hours
+                    180:    3 Hours
+                    240:    4 Hours
+                    300:    5 Hours
+                    360:    6 Hours
+                    420:    7 Hours
+                    480:    8 Hours
+                    540:    9 Hours
+                    600:    10 Hours
+                    660:    11 Hours
+                    720:    0.5 Days
+                    1080:   18 Hours
+                    1440:   1 Day
+                    2880:   2 Days
+                    4320:   3 Days
+                    5760:   4 Days
+                    10080:  1 Week
+                    20160:  2 Weeks
+                constraints:
+                    - NotBlank: ~
+                resettable: false
 
     tree:
         system_configuration:
-            platform:
-                children:
-                    integrations:
-                        children:
-                            cronofy_settings:
-                                priority: -10
-                                children:
-                                    cronofy_api:
-                                        priority: 80
-                                        children:
-                                            - dfn_oro_cronofy.client_id
-                                            - dfn_oro_cronofy.client_secret
-        organization_configuration:
             platform:
                 children:
                     integrations:
@@ -77,4 +100,5 @@ system_configuration:
                                     cronofy_user:
                                         priority: 80
                                         children:
+                                            - dfn_oro_cronofy.reminder
                                             - dfn_oro_cronofy.oauth_connect

@@ -24,6 +24,7 @@ class Configuration implements ConfigurationInterface
             [
                 'client_id' => ['value' => null],
                 'client_secret' => ['value' => null],
+                'reminder' => ['value' => 30]
             ]
         );
 

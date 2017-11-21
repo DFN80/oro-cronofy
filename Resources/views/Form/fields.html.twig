@@ -6,6 +6,9 @@
                 'connectUrl': form.vars.connectUrl
             } %}
             {# Load Connect Component #}
+            <style>
+                div.control-group-choice { display: none; }
+            </style>
             <div data-page-component-module="dfnorocronofy/js/app/components/dfn-oro-cronofy-oauth-connect-component"
                  data-page-component-options="{{ options|json_encode }}">
                 <div class="control-group">
