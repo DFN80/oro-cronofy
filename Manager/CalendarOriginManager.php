@@ -43,10 +43,7 @@ class CalendarOriginManager
         $calendarOrigin = $em->getRepository('DfnOroCronofyBundle:CalendarOrigin')
             ->findOneBy(['profileId' => $response['profile_id']]);
 
-        if ($calendarOrigin) {
-            //Re-activate existing origin
-            $calendarOrigin->setActive(true);
-        } else {
+        if (!$calendarOrigin) {
             //Create new origin entity
             $calendarOrigin = new CalendarOrigin();
             $calendarOrigin->setOwner($this->getUser());
@@ -69,15 +66,17 @@ class CalendarOriginManager
         $primaryCalendar = $this->apiManager->getPrimaryCalendar($calendars, $primaryId);
 
         if (!$primaryCalendar) {
-            //TODO: If primary calendar is false then prompt user to select a calendar. and return to this route with it
+            //TODO: If primary calendar is false then prompt user to select a calendar. and return to this method with it
         } else {
             $calendarOrigin->setCalendarName($primaryCalendar['calendar_name']);
             $calendarOrigin->setCalendarId($primaryCalendar['calendar_id']);
 
+            //Create notification channel for this origin
+            $channelResponse = $this->apiManager->createChannel($calendarOrigin);
+            $calendarOrigin->setChannelId($channelResponse['channel']['channel_id']);
+
             $em->persist($calendarOrigin);
             $em->flush();
-
-            //TODO: Figure out when and how we want to kick off the initial sync.
 
             return $calendarOrigin;
         }

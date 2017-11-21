@@ -1,0 +1,4 @@
+<script>
+    window.opener.postMessage({ "action": "complete", "response": "{{ response }}", "identifier": "{{ calendarOrigin.identifier }}"}, '{{ origin }}');
+    window.close();
+</script>

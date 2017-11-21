@@ -14,10 +14,14 @@ define(function(require) {
         tagName: "button",
         attributes: {"type": "button", "class": "btn"},
         connectUrl: null,
+        popup: null,
 
         initialize: function (options) {
             this.connectUrl = options.connectUrl;
             this.$el.html(__('dfn.oro_cronofy.oauth.connect'));
+
+            //Bind the views this scope to methods.
+            _.bindAll(this, "open", "receiveMessage");
         },
         events: {
             "click": "open"
@@ -29,16 +33,32 @@ define(function(require) {
         open: function () {
             //Add postMessage listener
             window.addEventListener("message", this.receiveMessage);
-            window.open(this.connectUrl, 'oauth', 'width=500,height=870,menubar=no');
+            this.popup = window.open(this.connectUrl, 'oauth', 'width=500,height=870,menubar=no');
         },
 
         receiveMessage: function (event) {
-            mediator.execute(
-                'showFlashMessage',
-                'success',
-                'Synchronizing ' + event.data
-            );
-            mediator.execute('refreshPage');
+            var action = event.data.action;
+
+            if (action === "oauth") {
+                //Get elevated permissions URL and redirect popup to that
+                this.popup.location.href = event.data.elevateUrl;
+            } else if (action === "complete") {
+                if (event.data.response === "success") {
+                    mediator.execute(
+                        'showFlashMessage',
+                        'success',
+                        'Synchronizing ' + event.data.identifier
+                    );
+                    mediator.execute('refreshPage');
+                } else {
+                    mediator.execute(
+                        'showFlashMessage',
+                        'error',
+                        'There was a problem authenticating your Calendar.'
+                    );
+                    mediator.execute('refreshPage');
+                }
+            }
         },
 
         /**

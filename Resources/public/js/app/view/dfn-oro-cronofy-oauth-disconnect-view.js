@@ -26,7 +26,7 @@ define(function(require) {
         },
 
         /**
-         * Register listener for postMessage and open Cronofy Authenticate Page in new window.
+         * Open dialog to confirm the user wants to disconnect their calendar.
          */
         confirm: function () {
 

@@ -1,4 +1,3 @@
 <script>
-    window.opener.postMessage('{{ calendarOrigin.identifier }}', '{{ origin }}');
-    window.close();
+    window.opener.postMessage({ "action": "oauth", "elevateUrl": "{{ url('dfn_oro_cronofy_oauth_elevate', {'originId': calendarOrigin.id}) }}" }, '{{ origin }}');
 </script>
