@@ -10,7 +10,11 @@ use Oro\Bundle\OrganizationBundle\Entity\OrganizationInterface;
 /**
  * Calendar Origin
  *
- * @ORM\Table(name="dfn_calendar_origin")
+ * @ORM\Table(name="dfn_calendar_origin",
+ *     indexes={
+ *          @ORM\Index(name="profile_id_idx", columns={"profile_id"}),
+ *          @ORM\Index(name="channel_id_idx", columns={"channel_id"})
+ *     })
  * @ORM\Entity()
  */
 class CalendarOrigin
@@ -29,7 +33,7 @@ class CalendarOrigin
      *
      * @ORM\Column(name="isActive", type="boolean")
      */
-    protected $isActive = true;
+    protected $isActive = false;
 
     /**
      * @var \DateTime
@@ -116,6 +120,13 @@ class CalendarOrigin
      * @ORM\Column(name="calendar_id", type="string", length=255, nullable=false)
      */
     protected $calendarId;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="channel_id", type="string", length=255, nullable=true)
+     */
+    protected $channelId;
 
     /**
      * Get id
@@ -381,6 +392,22 @@ class CalendarOrigin
     public function setCalendarId(string $calendarId)
     {
         $this->calendarId = $calendarId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getChannelId(): string
+    {
+        return $this->channelId;
+    }
+
+    /**
+     * @param string $channelId
+     */
+    public function setChannelId(string $channelId = null)
+    {
+        $this->channelId = $channelId;
     }
 
     /**
