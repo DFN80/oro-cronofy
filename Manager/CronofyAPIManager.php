@@ -148,17 +148,19 @@ class CronofyAPIManager
      * @param \DateTime|null $from
      * @param \DateTime|null $to
      * @param \DateTime|null $lastModified
+     * @param boolean $includeDeleted
      * @return array
      */
     public function readEvents(
         CalendarOrigin $calendarOrigin,
         \DateTime $from = null,
         \DateTime $to = null,
-        \DateTime $lastModified = null
+        \DateTime $lastModified = null,
+        $includeDeleted = true
     ) {
         $query = [
             'tzid' => 'Etc/UTC',
-            'include_deleted' => 1,
+            'include_deleted' => $includeDeleted,
             'include_moved' => 1,
             'include_managed' => 1,
             'calendar_ids' => [
