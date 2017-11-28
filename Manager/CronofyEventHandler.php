@@ -86,6 +86,11 @@ class CronofyEventHandler
             throw new \Exception("No active origin found.");
         }
 
+        //Throw exception if there's an event_id and it's not numeric as all internal id's must be.
+        if (isset($message['event_id']) && !is_numeric($message['event_id'])) {
+            throw new \Exception("Invalid internal event id.");
+        }
+
         //Check to see if this event exist and should be updated or if we need to create it.
         $cronofyEvent = $this->cronofyEventRepo->findOneBy(['cronofyId' => $message['event_uid']]);
         if (isset($message['event_id']) || $cronofyEvent) {
@@ -111,6 +116,12 @@ class CronofyEventHandler
     protected function updateEvent($message, CalendarOrigin $calendarOrigin)
     {
         $cronofyEvent = $this->getCronofyEvent($message);
+
+        //Check if the updated time doesn't match our cronofyEvent updated time, only process if it doesn't.
+        $updatedAt = new \DateTime($message['updated']);
+        if ($updatedAt == $cronofyEvent->getUpdatedAt()) {
+            return;
+        }
 
         $em = $this->doctrine->getManager();
 
@@ -140,27 +151,36 @@ class CronofyEventHandler
                 }
             }
 
+            //Get the calendar owners email address.
+            $ownerEmail = $calendarEvent->getCalendar()->getOwner()->getEmail();
+
             //Create or Update attendees provided in message
             foreach ($message['attendees'] as $attendee) {
                 //Get a matching existing attendee by email
                 $existingAttendee = $calendarEvent->getAttendeeByEmail($attendee['email']);
-                if (!$existingAttendee) {
-                    //Create new attendee
-                    //TODO confirm the attendee is not the record owner.
-                    $newAttendee = $this->createAttendee($attendee, $calendarEvent);
-                    $em->persist($newAttendee);
-                } else {
-                    //Update status for existing attendee if changed.
-                    $statusEnum = $this->doctrine
-                        ->getRepository(ExtendHelper::buildEnumValueClassName(Attendee::STATUS_ENUM_CODE))
-                        ->find(self::STATUSES[$attendee['status']]);
-                    if ($existingAttendee->getStatus() != $statusEnum) {
-                        $existingAttendee->setStatus($statusEnum);
-                        $em->persist($existingAttendee);
+                //Don't process attendee if it's the event owner, otherwise create or update the attendee
+                if ($attendee['email'] != $ownerEmail) {
+                    if (!$existingAttendee) {
+                        //Create new attendee
+                        $newAttendee = $this->createAttendee($attendee, $calendarEvent);
+                        $em->persist($newAttendee);
+                    } else {
+                        //Update status for existing attendee if changed.
+                        $statusEnum = $this->doctrine
+                            ->getRepository(ExtendHelper::buildEnumValueClassName(Attendee::STATUS_ENUM_CODE))
+                            ->find(self::STATUSES[$attendee['status']]);
+                        if ($existingAttendee->getStatus() != $statusEnum) {
+                            $existingAttendee->setStatus($statusEnum);
+                            $em->persist($existingAttendee);
+                        }
                     }
                 }
             }
         }
+
+        //Set updatedAt time to match cronofy.
+        $cronofyEvent->setUpdatedAt($updatedAt);
+        $em->persist($cronofyEvent);
 
         $em->persist($calendarEvent);
         $em->flush();
@@ -185,11 +205,16 @@ class CronofyEventHandler
         }
         $em->persist($calendarEvent);
 
+        //Get the calendar owners email address.
+        $ownerEmail = $calendarEvent->getCalendar()->getOwner()->getEmail();
+
         //Create new attendee for each attendee in message
         foreach ($message['attendees'] as $attendee) {
-            //TODO confirm the attendee is not the record owner.
-            $newAttendee = $this->createAttendee($attendee, $calendarEvent);
-            $em->persist($newAttendee);
+            //Don't process attendee if it's the event owner, otherwise create or update the attendee
+            if ($attendee['email'] != $ownerEmail) {
+                $newAttendee = $this->createAttendee($attendee, $calendarEvent);
+                $em->persist($newAttendee);
+            }
         }
 
         //Create Cronofy Event record to track we've synced this event
@@ -212,7 +237,12 @@ class CronofyEventHandler
 
         $cronofyEvent = $this->getCronofyEvent($message);
 
+        //Remove the related calendar event
+        $em->remove($cronofyEvent->getCalendarEvent());
+
+        //Remove record of the synchronization
         $em->remove($cronofyEvent);
+
         $em->flush();
     }
 
