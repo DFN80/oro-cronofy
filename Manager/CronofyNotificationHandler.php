@@ -81,10 +81,11 @@ class CronofyNotificationHandler
                 $this->processChange($message, $calendarOrigin);
                 break;
             case 'profile_disconnected':
+                //TODO
                 $this->processDisconnect($message, $calendarOrigin);
                 break;
             case 'profile_initial_sync_completed':
-                $this->processSync($message, $calendarOrigin);
+                $this->processSync($calendarOrigin);
                 break;
         }
     }
@@ -109,6 +110,37 @@ class CronofyNotificationHandler
         $this->messageProducer->send(Topics::CREATE_EVENTS, json_encode($response['events']));
 
         //If there's additional pages of events get those and create more messages.
+        $this->processAdditionalPages($calendarOrigin, $response);
+
+        //Record new synchronized at datetime
+        $calendarOrigin->setSynchronizedAt($changesSince);
+        $em = $this->doctrine->getManager();
+        $em->persist($calendarOrigin);
+        $em->flush();
+    }
+
+    /**
+     * @param CalendarOrigin $calendarOrigin
+     */
+    protected function processSync(CalendarOrigin $calendarOrigin)
+    {
+        $this->messageProducer->send(
+            Topics::SYNC,
+            json_encode(
+                [
+                    "origin_id" => $calendarOrigin->getId(),
+                    "action" => "pull"
+                ]
+            )
+        );
+    }
+
+    /**
+     * @param CalendarOrigin $calendarOrigin
+     * @param $response
+     */
+    protected function processAdditionalPages(CalendarOrigin $calendarOrigin, $response)
+    {
         while (isset($response['pages']['next_page'])) {
             //Get next page of results
             $response = $this->apiManager->doHttpRequest(
@@ -120,11 +152,5 @@ class CronofyNotificationHandler
             //Send events off to queue
             $this->messageProducer->send(Topics::CREATE_EVENTS, json_encode($response['events']));
         }
-
-        //Record new synchronized at datetime
-        $calendarOrigin->setSynchronizedAt($changesSince);
-        $em = $this->doctrine->getManager();
-        $em->persist($calendarOrigin);
-        $em->flush();
     }
 }
