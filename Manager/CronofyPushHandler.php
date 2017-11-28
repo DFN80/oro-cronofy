@@ -3,9 +3,11 @@
 namespace Dfn\Bundle\OroCronofyBundle\Manager;
 
 use Dfn\Bundle\OroCronofyBundle\Entity\CronofyEvent;
+
 use Doctrine\Common\Persistence\ManagerRegistry;
-use Doctrine\Common\Persistence\ObjectRepository;
+
 use Oro\Bundle\CalendarBundle\Entity\CalendarEvent;
+use Oro\Bundle\ConfigBundle\Config\ConfigManager;
 
 /**
  * Class CronofyPushHandler
@@ -29,15 +31,20 @@ class CronofyPushHandler
     /** @var \Doctrine\Common\Persistence\ObjectRepository  */
     private $cronofyEventRepo;
 
+    /** @var ConfigManager */
+    protected $configManager;
+
     /**
      * CronofyPushHandler constructor.
      * @param ManagerRegistry $doctrine
      * @param CronofyAPIManager $apiManager
+     * @param ConfigManager $configManager
      */
-    public function __construct(ManagerRegistry $doctrine, CronofyAPIManager $apiManager)
+    public function __construct(ManagerRegistry $doctrine, CronofyAPIManager $apiManager, ConfigManager $configManager)
     {
         $this->doctrine = $doctrine;
         $this->apiManager = $apiManager;
+        $this->configManager = $configManager;
 
         $this->eventRepo = $this->doctrine->getRepository('OroCalendarBundle:CalendarEvent');
         $this->originRepo = $this->doctrine->getRepository('DfnOroCronofyBundle:CalendarOrigin');
@@ -74,12 +81,6 @@ class CronofyPushHandler
         //Build the content to send Cronofy.
         $parameters = $this->eventToArray($event);
 
-        //Set reminder if this is a new future event
-//        if ($event->getStart() > new \DateTime()) {
-            //@TODO Pull in config setting for reminder time.
-            $parameters['reminders'] = [['minutes' => 30]];
-//        }
-
         //Add attendee changes if any specified in message or we are creating a new event
         if (isset($message['content']['attendees'])) {
             $parameters['attendees'] = $message['content']['attendees'];
@@ -95,16 +96,37 @@ class CronofyPushHandler
             }
         }
 
-        //Check if we already have a record of syncing this event with Cronofy. Set correct id if so.
-        $event_id = $this->getCronofyEventId($origin, $message['id']);
-        if ($event_id) {
-            $parameters['event_id'] = $event_id;
+        $cronofyEvent = $this->cronofyEventRepo->findOneBy(
+            [
+                'calendarOrigin' => $origin,
+                'calendarEvent' => $message['id']
+            ]
+        );
+
+        //Check if we already have a record of syncing this event with Cronofy. Set correct id and reminders if so.
+        if ($cronofyEvent) {
+            if (!$cronofyEvent->getCronofyId()) {
+                $parameters['event_id'] = $cronofyEvent->getCalendarEvent()->getId();
+
+                //Set reminders based on what's store in the cronofyEvent record.
+                $parameters['reminders'] = $cronofyEvent->getReminders();
+            } else {
+                //External events are called with 'event_uid' instead of 'event_id'
+                unset($parameters['event_id']);
+                $parameters['event_uid'] = $cronofyEvent->getCronofyId();
+                //TODO: is this a recurring event? return if so, no update allowed. or just check if it's editable?
+            }
         } else {
+            //Set reminder based of calendar user system configuration.
+            $this->configManager->setScopeId($event->getCalendar()->getOwner()->getId());
+            $parameters['reminders'] = [['minutes' => $this->configManager->get('dfn_oro_cronofy.reminder')]];
+
             //Create Cronofy Event record, this is the first time we've synced it
             $em = $this->doctrine->getManager();
             $cronofyEvent = new CronofyEvent();
             $cronofyEvent->setCalendarEvent($event);
             $cronofyEvent->setCalendarOrigin($origin);
+            $cronofyEvent->setReminders($parameters['reminders']);
             $em->persist($cronofyEvent);
             $em->flush();
         }
@@ -122,7 +144,11 @@ class CronofyPushHandler
         $origin = $this->originRepo->find($message['origin_id']);
 
         //Set event ID based on the event being Internal or External
-        $message['content']['event_id'] = $message['id'];
+        if (is_numeric($message['id'])) {
+            $message['content']['event_id'] = $message['id'];
+        } else {
+            $message['content']['event_uid'] = $message['id'];
+        }
 
         //Use the API manager to send the call to delete an event
         $this->apiManager->deleteEvent($origin, $message['content']);
@@ -131,14 +157,23 @@ class CronofyPushHandler
     /**
      * @param CalendarEvent $event
      * @return \Dfn\Bundle\OroCronofyBundle\Entity\CalendarOrigin|object
+     * @throws \Exception
      */
     protected function getOriginByEvent(CalendarEvent $event)
     {
         //Get the active calendar origin for the event owner.
         $userOwner = $event->getCalendar()->getOwner();
 
+        //Get users active origin
+        $origin = $this->originRepo->findOneBy(['owner' => $userOwner, 'isActive' => true]);
+
+        //error if the origin is null
+        if (!$origin) {
+            throw new \Exception("No active origin found.");
+        }
+
         //Return the active origin for the user
-        return $this->originRepo->findOneBy(['owner' => $userOwner, 'isActive' => true]);
+        return $origin;
     }
 
     /**
