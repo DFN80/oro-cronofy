@@ -50,6 +50,20 @@ class CronofyEvent
     protected $calendarOrigin;
 
     /**
+     * @var array
+     *
+     * @ORM\Column(name="reminders", type="json_array", nullable=true)
+     */
+    protected $reminders;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="updated", type="datetime", nullable=true)
+     */
+    protected $updatedAt;
+
+    /**
      * Get id
      *
      * @return int
@@ -107,4 +121,35 @@ class CronofyEvent
         $this->calendarOrigin = $calendarOrigin;
     }
 
+    /**
+     * @return array
+     */
+    public function getReminders()
+    {
+        return $this->reminders;
+    }
+
+    /**
+     * @param array $reminders
+     */
+    public function setReminders(array $reminders)
+    {
+        $this->reminders = $reminders;
+    }
+
+    /**
+     * @return \DateTime
+     */
+    public function getUpdatedAt()
+    {
+        return $this->updatedAt;
+    }
+
+    /**
+     * @param \DateTime $updatedAt
+     */
+    public function setUpdatedAt(\DateTime $updatedAt)
+    {
+        $this->updatedAt = $updatedAt;
+    }
 }

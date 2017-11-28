@@ -90,6 +90,12 @@ class DfnOroCronofyBundleInstaller implements Installation
         $table->addColumn('calendar_event_id', 'integer', []);
         $table->addColumn('calendar_origin_id', 'integer', []);
         $table->addColumn('cronofy_id', 'string', []);
+        $table->addColumn('reminders', 'json', []);
+        $table->addColumn(
+            'updated',
+            'datetime',
+            ['notnull' => false, 'comment' => '(DC2Type:datetime)']
+        );
         $table->addIndex(['calendar_event_id'], 'IDX_E6B08D0D7495C8E3', []);
         $table->addIndex(['calendar_origin_id'], 'IDX_E6B08D0D15CEF886', []);
         $table->addUniqueIndex(['calendar_event_id', 'calendar_origin_id'], 'dfn_cronofy_event_origin', []);
