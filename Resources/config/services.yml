@@ -7,6 +7,7 @@ parameters:
     dfn_oro_cronofy.push_handler.class:                     Dfn\Bundle\OroCronofyBundle\Manager\CronofyPushHandler
     dfn_oro_cronofy.notification_handler.class:             Dfn\Bundle\OroCronofyBundle\Manager\CronofyNotificationHandler
     dfn_oro_cronofy.event_handler.class:                    Dfn\Bundle\OroCronofyBundle\Manager\CronofyEventHandler
+    dfn_oro_cronofy.sync_handler.class:                     Dfn\Bundle\OroCronofyBundle\Manager\CronofySyncHandler
 
 services:
     dfn_oro_cronofy.form.type.dfn_oro_conofy_auth:
@@ -103,6 +104,7 @@ services:
         arguments:
             - '@doctrine'
             - '@dfn_oro_cronofy.cronofy_api_manager'
+            - '@oro_config.user'
 
     dfn_oro_cronofy.notification_handler:
         class: '%dfn_oro_cronofy.notification_handler.class%'
@@ -139,5 +141,20 @@ services:
         arguments:
             - '@logger'
             - '@dfn_oro_cronofy.event_handler'
+        tags:
+            - { name: oro_message_queue.client.message_processor }
+
+    dfn_oro_cronofy.sync_handler:
+        class: '%dfn_oro_cronofy.sync_handler.class%'
+        arguments:
+            - '@doctrine'
+            - '@dfn_oro_cronofy.cronofy_api_manager'
+            - '@oro_message_queue.message_producer'
+
+    dfn_oro_cronofy.async.sync_processor:
+        class: Dfn\Bundle\OroCronofyBundle\Async\SyncProcessor
+        arguments:
+            - '@logger'
+            - '@dfn_oro_cronofy.sync_handler'
         tags:
             - { name: oro_message_queue.client.message_processor }
