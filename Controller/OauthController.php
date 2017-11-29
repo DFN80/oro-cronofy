@@ -2,6 +2,7 @@
 
 namespace Dfn\Bundle\OroCronofyBundle\Controller;
 
+use Dfn\Bundle\OroCronofyBundle\Entity\CronofyEvent;
 use Dfn\Bundle\OroCronofyBundle\Manager\CronofyOauth2Manager;
 use Dfn\Bundle\OroCronofyBundle\Async\Topics;
 
@@ -96,7 +97,10 @@ class OauthController extends Controller
         $em->persist($calendarOrigin);
         $em->flush();
 
-        //TODO trigger initial sync job
+        //Queue messages for sync jobs both ways.
+//        $messageProducer = $this->get('oro_message_queue.message_producer');
+//        $messageProducer->send(Topics::SYNC, ["origin_id" => $calendarOrigin->getId(), "action" => "pull"]);
+//        $messageProducer->send(Topics::SYNC, ["origin_id" => $calendarOrigin->getId(), "action" => "push"]);
 
         return ["response" => "success", 'calendarOrigin' => $calendarOrigin, 'origin' => $origin];
     }
@@ -145,14 +149,12 @@ class OauthController extends Controller
             throw new HttpException("401");
         }
 
-        //Get content of request from Cronofy.
-        $messageProducer = $this->get('oro_message_queue.message_producer');
-
         //Get type of notification from content
         $type = json_decode($request->getContent(), true)['notification']['type'];
 
-        //Send message to queue if the type if not verification.
+        //Send message to queue if the type is not verification.
         if ($type != 'verification') {
+            $messageProducer = $this->get('oro_message_queue.message_producer');
             $messageProducer->send(Topics::NOTIFICATION, $request->getContent());
         }
 

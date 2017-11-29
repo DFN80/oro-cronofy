@@ -123,6 +123,7 @@ class CronofySyncHandler
      */
     public function pushEvents(CalendarOrigin $calendarOrigin)
     {
+        //Get all event ids for events there's no cronofyEvent record of on the users active origin.
         return;
     }
 

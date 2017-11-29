@@ -15,8 +15,8 @@ class Topics
     const PUSH_UPDATED_EVENT = 'oro_cronofy.push.updated.event'; //Send single updated event
     const PUSH_DELETED_EVENTS = 'oro_cronofy.push.deleted.events'; //Allows an array of deleted events to be sent
     const PUSH_DELETED_EVENT = 'oro_cronofy.push.deleted.event'; //Send single deleted event
-    const CREATE_EVENT = 'oro_cronofy.create.event'; //Create a calendar event based on message contents
-    const CREATE_EVENTS = 'oro_cronofy.create.events'; //Allows an array of events to be created to be sent
-    const PULL_EVENTS = 'oro_cronofy.pull.events';  //Pull multiple events based on criteria
+    const CREATE_EVENT = 'oro_cronofy.create.event'; //Create or update a calendar event based on message contents
+    const CREATE_EVENTS = 'oro_cronofy.create.events'; //Allows an array of events to be created or updated to be sent
+    const SYNC = 'oro_cronofy.sync';  //Push or Pull events from origin
     const NOTIFICATION = 'oro_cronofy.notification'; //Cronofy notifications to be processed
 }

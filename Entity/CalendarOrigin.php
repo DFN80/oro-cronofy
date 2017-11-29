@@ -15,7 +15,7 @@ use Oro\Bundle\OrganizationBundle\Entity\OrganizationInterface;
  *          @ORM\Index(name="profile_id_idx", columns={"profile_id"}),
  *          @ORM\Index(name="channel_id_idx", columns={"channel_id"})
  *     })
- * @ORM\Entity()
+ * @ORM\Entity(repositoryClass="Dfn\Bundle\OroCronofyBundle\Entity\Repository\CalendarOriginRepository")
  */
 class CalendarOrigin
 {
@@ -41,6 +41,15 @@ class CalendarOrigin
      * @ORM\Column(name="synchronized", type="datetime", nullable=true)
      */
     protected $synchronizedAt;
+
+    /**
+     * Cronofy limits the end time when reading events so we have to track how far out we've synced.
+     *
+     * @var \DateTime
+     *
+     * @ORM\Column(name="synchronized_to", type="datetime", nullable=true)
+     */
+    protected $synchronizedTo;
 
     /**
      * @var User
@@ -182,6 +191,30 @@ class CalendarOrigin
     public function setSynchronizedAt($synchronizedAt)
     {
         $this->synchronizedAt = $synchronizedAt;
+
+        return $this;
+    }
+
+    /**
+     * Get date/time when events from this origin were synchronized to
+     *
+     * @return \DateTime
+     */
+    public function getSynchronizedTo()
+    {
+        return $this->synchronizedAt;
+    }
+
+    /**
+     * Set date/time when events from this origin were synchronized to
+     *
+     * @param \DateTime $synchronizedTo
+     *
+     * @return CalendarOrigin
+     */
+    public function setSynchronizedTo($synchronizedTo)
+    {
+        $this->synchronizedTo = $synchronizedTo;
 
         return $this;
     }
