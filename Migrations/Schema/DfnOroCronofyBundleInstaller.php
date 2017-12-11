@@ -41,7 +41,17 @@ class DfnOroCronofyBundleInstaller implements Installation
         $table->addColumn('organization_id', 'integer', []);
         $table->addColumn('isActive', 'boolean', []);
         $table->addColumn(
-            'synchronized',
+            'last_modified',
+            'datetime',
+            ['notnull' => false, 'comment' => '(DC2Type:datetime)']
+        );
+        $table->addColumn(
+            'last_pushed',
+            'datetime',
+            ['notnull' => false, 'comment' => '(DC2Type:datetime)']
+        );
+        $table->addColumn(
+            'last_pulled',
             'datetime',
             ['notnull' => false, 'comment' => '(DC2Type:datetime)']
         );

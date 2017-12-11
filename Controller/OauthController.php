@@ -98,9 +98,15 @@ class OauthController extends Controller
         $em->flush();
 
         //Queue messages for sync jobs both ways.
-//        $messageProducer = $this->get('oro_message_queue.message_producer');
-//        $messageProducer->send(Topics::SYNC, ["origin_id" => $calendarOrigin->getId(), "action" => "pull"]);
-//        $messageProducer->send(Topics::SYNC, ["origin_id" => $calendarOrigin->getId(), "action" => "push"]);
+        $messageProducer = $this->get('oro_message_queue.message_producer');
+        $messageProducer->send(
+            Topics::SYNC,
+            json_encode(["origin_id" => $calendarOrigin->getId(), "action" => "pull"])
+        );
+        $messageProducer->send(
+            Topics::SYNC,
+            json_encode(["origin_id" => $calendarOrigin->getId(), "action" => "push"])
+        );
 
         return ["response" => "success", 'calendarOrigin' => $calendarOrigin, 'origin' => $origin];
     }

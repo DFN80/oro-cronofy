@@ -99,7 +99,7 @@ class CronofyNotificationHandler
         $changesSince = new \DateTime($message['notification']['changes_since']);
 
         //Check if we've synced since the changes_since time, if so return as we've synced more recently
-        if ($changesSince < $calendarOrigin->getSynchronizedAt()) {
+        if ($changesSince < $calendarOrigin->getLastModified()) {
             return;
         }
 
@@ -112,8 +112,8 @@ class CronofyNotificationHandler
         //If there's additional pages of events get those and create more messages.
         $this->processAdditionalPages($calendarOrigin, $response);
 
-        //Record new synchronized at datetime
-        $calendarOrigin->setSynchronizedAt($changesSince);
+        //Record new last modified at datetime
+        $calendarOrigin->setLastModified($changesSince);
         $em = $this->doctrine->getManager();
         $em->persist($calendarOrigin);
         $em->flush();

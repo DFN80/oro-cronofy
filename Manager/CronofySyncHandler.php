@@ -18,7 +18,7 @@ use Oro\Component\MessageQueue\Client\MessageProducerInterface;
 class CronofySyncHandler
 {
     /** Amount of days to go back during initial sync */
-    const DAYS_BACK = 14;
+    const DAYS_BACK = 42;
 
     /** Amount of days to go forward during initial sync */
     const DAYS_FORWARD = 201;
@@ -105,14 +105,14 @@ class CronofySyncHandler
             false
         );
 
-        //Send events off to queue
+        //Send events off to queue, the event handler will confirm if the event has been modified prior to updating it.
         $this->messageProducer->send(Topics::CREATE_EVENTS, json_encode($response['events']));
 
         //If there's additional pages of events get those and create more messages.
         $this->processAdditionalPages($calendarOrigin, $response);
 
-        //Record new synchronized at datetime
-        $calendarOrigin->setSynchronizedAt(new \DateTime());
+        //Record new last pulled at datetime
+        $calendarOrigin->setLastPulledAt(new \DateTime());
         $em = $this->doctrine->getManager();
         $em->persist($calendarOrigin);
         $em->flush();
@@ -123,8 +123,19 @@ class CronofySyncHandler
      */
     public function pushEvents(CalendarOrigin $calendarOrigin)
     {
-        //Get all event ids for events there's no cronofyEvent record of on the users active origin.
-        return;
+        //Get all event ids for events there's no cronofyEvent record on the users active origin.
+        $events = $this->originRepo->getEventsToSync($calendarOrigin);
+
+        //If we got results then send them as a message to the create events queue.
+        if (count($events) > 0) {
+            $this->messageProducer->send(Topics::PUSH_NEW_EVENTS, json_encode($events));
+        }
+
+        //Record new last pushed at datetime
+        $calendarOrigin->setLastPushedAt(new \DateTime());
+        $em = $this->doctrine->getManager();
+        $em->persist($calendarOrigin);
+        $em->flush();
     }
 
     /**

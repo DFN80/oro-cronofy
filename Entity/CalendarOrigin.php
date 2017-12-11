@@ -38,18 +38,27 @@ class CalendarOrigin
     /**
      * @var \DateTime
      *
-     * @ORM\Column(name="synchronized", type="datetime", nullable=true)
+     * @ORM\Column(name="last_modified", type="datetime", nullable=true)
      */
-    protected $synchronizedAt;
+    protected $lastModified;
 
     /**
-     * Cronofy limits the end time when reading events so we have to track how far out we've synced.
+     * Tracks the last time we ran a push for any non managed events.
      *
      * @var \DateTime
      *
-     * @ORM\Column(name="synchronized_to", type="datetime", nullable=true)
+     * @ORM\Column(name="last_pushed", type="datetime", nullable=true)
      */
-    protected $synchronizedTo;
+    protected $lastPushedAt;
+
+    /**
+     * Tracks the last time we pulled all events from Cronofy to look for events we don't already manage.
+     *
+     * @var \DateTime
+     *
+     * @ORM\Column(name="last_pulled", type="datetime", nullable=true)
+     */
+    protected $lastPulledAt;
 
     /**
      * @var User
@@ -176,48 +185,57 @@ class CalendarOrigin
      *
      * @return \DateTime
      */
-    public function getSynchronizedAt()
+    public function getLastModified()
     {
-        return $this->synchronizedAt;
+        return $this->lastModified;
     }
 
     /**
      * Set date/time when events from this origin were synchronized
      *
-     * @param \DateTime $synchronizedAt
+     * @param \DateTime $lastModified
      *
      * @return CalendarOrigin
      */
-    public function setSynchronizedAt($synchronizedAt)
+    public function setLastModified($lastModified)
     {
-        $this->synchronizedAt = $synchronizedAt;
+        $this->lastModified = $lastModified;
 
         return $this;
     }
 
     /**
-     * Get date/time when events from this origin were synchronized to
-     *
      * @return \DateTime
      */
-    public function getSynchronizedTo()
+    public function getLastPushedAt()
     {
-        return $this->synchronizedAt;
+        return $this->lastPushedAt;
     }
 
     /**
-     * Set date/time when events from this origin were synchronized to
-     *
-     * @param \DateTime $synchronizedTo
-     *
-     * @return CalendarOrigin
+     * @param \DateTime $lastPushedAt
      */
-    public function setSynchronizedTo($synchronizedTo)
+    public function setLastPushedAt($lastPushedAt)
     {
-        $this->synchronizedTo = $synchronizedTo;
-
-        return $this;
+        $this->lastPushedAt = $lastPushedAt;
     }
+
+    /**
+     * @return \DateTime
+     */
+    public function getLastPulledAt()
+    {
+        return $this->lastPulledAt;
+    }
+
+    /**
+     * @param \DateTime $lastPulledAt
+     */
+    public function setLastPulledAt($lastPulledAt)
+    {
+        $this->lastPulledAt = $lastPulledAt;
+    }
+
 
     /**
      * @return OrganizationInterface
