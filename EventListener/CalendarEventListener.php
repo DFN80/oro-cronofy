@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 
+use Oro\Bundle\CalendarBundle\Entity\Recurrence;
 use Oro\Bundle\PlatformBundle\EventListener\OptionalListenerInterface;
 use Oro\Bundle\CalendarBundle\Entity\Attendee;
 use Oro\Bundle\CalendarBundle\Entity\CalendarEvent;
@@ -90,6 +91,24 @@ class CalendarEventListener implements OptionalListenerInterface
             $this->getAttendeeFilter()
         );
 
+        //Get array of created reccurences
+        $createdRecurrences = array_filter(
+            $uow->getScheduledEntityInsertions(),
+            $this->getRecurrenceFilter()
+        );
+
+        //Get array of updated reccurences
+        $updatedRecurrences = array_filter(
+            $uow->getScheduledEntityUpdates(),
+            $this->getRecurrenceFilter()
+        );
+
+        //Get array of deleted reccurences
+        $deletedRecurrences = array_filter(
+            $uow->getScheduledEntityDeletions(),
+            $this->getRecurrenceFilter()
+        );
+
         //Build array of created events to be sent to message queue
         foreach ($createdEvents as $entity) {
             //Confirm there's an active calendar origin for created event, no need to send messages if not
@@ -109,10 +128,17 @@ class CalendarEventListener implements OptionalListenerInterface
                 continue;
             }
 
-            //Event already has record of sync with Cronofy, send update message.
             $this->updatedEvents[$entity->getId()] = $uow->getEntityChangeSet($entity);
+
+            //Add invites and removals of attendees
             $this->setAttendeeChanges($entity, "invite", $createdAttendees);
             $this->setAttendeeChanges($entity, "remove", $deletedAttendees);
+
+            //Combine all recurrence changes, all we care about it that there was a change.
+            $recurrences = array_merge($createdRecurrences, $updatedRecurrences, $deletedRecurrences);
+
+            //Set recurrence change boolean, flags us to remove all tracked recurrences and recreate if needed.
+            $this->setRecurrenceChanges($entity, $recurrences);
         }
 
         //Build array of deleted events to be sent to message queue
@@ -131,6 +157,33 @@ class CalendarEventListener implements OptionalListenerInterface
                     'class' => get_class($entity),
                     'origin_id' => $origin->getId()
                 ];
+            }
+
+            //If deleting the recurring event for a series send if there's any tracked events for it.
+            //Add a delete message for each tracked recurrence
+            if ($entity->getRecurrence()) {
+                $cronofyEventRepo = $em->getRepository('DfnOroCronofyBundle:CronofyEvent');
+                //Get all tracked recurrences for this event
+                $cronofyEvents = $cronofyEventRepo->findBy(
+                    [
+                        'calendarOrigin' => $origin,
+                        'parentEvent' => $entity,
+                    ]
+                );
+
+                //Remove each recurrences tracking record and add to deletedEvents.
+                foreach ($cronofyEvents as $cronofyEvent) {
+                    $em->remove($cronofyEvent);
+
+                    $event_id = $entity->getId() . '_' . $cronofyEvent->getRecurrenceTime()->getTimestamp();
+
+                    $this->deletedEvents[] = [
+                        'id' => $event_id,
+                        'class' => get_class($entity),
+                        'origin_id' => $origin->getId()
+                    ];
+                }
+
             }
         }
     }
@@ -191,7 +244,8 @@ class CalendarEventListener implements OptionalListenerInterface
             'description' => 'description',
             'start' => 'start',
             'end' => 'end',
-            'location' => 'location'
+            'location' => 'location',
+            'cancelled' => 'cancelled'
         ];
         $messages = [];
         foreach ($this->updatedEvents as $id => $event) {
@@ -210,6 +264,11 @@ class CalendarEventListener implements OptionalListenerInterface
             //If there's attendee changes then send them along!
             if (isset($event['attendees'])) {
                 $message['attendees'] = $event['attendees'];
+            }
+
+            //If there's recurrence changes then send them along too!
+            if (isset($event['recurrenceChanges'])) {
+                $message['recurrenceChanges'] = $event['recurrenceChanges'];
             }
 
             //Only set message if there's changes to supported properties
@@ -262,6 +321,16 @@ class CalendarEventListener implements OptionalListenerInterface
     }
 
     /**
+     * @return \Closure
+     */
+    protected function getRecurrenceFilter()
+    {
+        return function ($entity) {
+            return $entity instanceof Recurrence;
+        };
+    }
+
+    /**
      * @param CalendarEvent $entity
      * @param array $attendees
      * @param string $action
@@ -275,6 +344,22 @@ class CalendarEventListener implements OptionalListenerInterface
                     'email' => $attendee->getEmail(),
                     'display_name' => $attendee->getDisplayName()
                 ];
+            }
+        }
+    }
+
+    /**
+     * @param CalendarEvent $entity
+     * @param array $recurrences
+     */
+    protected function setRecurrenceChanges(CalendarEvent $entity, $recurrences = [])
+    {
+        foreach ($recurrences as $recurrence) {
+            //If the recurrence was deleted or changed flag that in the updatedEvents array for the event.
+            if (isset($this->updatedEvents[$entity->getId()]['recurrence']) ||
+                ($entity->getRecurrence() && $entity->getRecurrence()->getId() == $recurrence->getId())
+            ) {
+                $this->updatedEvents[$entity->getId()]['recurrenceChanges'] = 1;
             }
         }
     }
