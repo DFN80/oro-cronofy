@@ -5,10 +5,7 @@ namespace Dfn\Bundle\OroCronofyBundle\Manager;
 use Buzz\Message\RequestInterface;
 use Dfn\Bundle\OroCronofyBundle\Async\Topics;
 use Dfn\Bundle\OroCronofyBundle\Entity\CalendarOrigin;
-use Dfn\Bundle\OroCronofyBundle\Entity\CronofyEvent;
 use Doctrine\Common\Persistence\ManagerRegistry;
-use Doctrine\Common\Persistence\ObjectRepository;
-use Oro\Bundle\CalendarBundle\Entity\CalendarEvent;
 use Oro\Component\MessageQueue\Client\MessageProducerInterface;
 
 /**
@@ -62,6 +59,8 @@ class CronofySyncHandler
 
     /**
      * @param array $message
+     *
+     * @throws \Exception
      */
     public function processSync(array $message)
     {
@@ -74,9 +73,8 @@ class CronofySyncHandler
         );
 
         if (!$calendarOrigin) {
-            //No origin found for the specified channel, we can't do anything with this message.
-            //TODO log this, likely throw exception which will get logged
-            return;
+            //No active origin found for the specified id, we can't do anything with this message.
+            throw new \Exception("No active origin found.");
         }
 
         $action = $message['action'];
@@ -85,7 +83,6 @@ class CronofySyncHandler
                 $this->pullEvents($calendarOrigin);
                 break;
             case 'push':
-                //TODO
                 $this->pushEvents($calendarOrigin);
                 break;
         }
