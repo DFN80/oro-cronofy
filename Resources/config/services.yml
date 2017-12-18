@@ -105,6 +105,7 @@ services:
             - '@doctrine'
             - '@dfn_oro_cronofy.cronofy_api_manager'
             - '@oro_config.user'
+            - '@oro_calendar.model.recurrence'
 
     dfn_oro_cronofy.notification_handler:
         class: '%dfn_oro_cronofy.notification_handler.class%'

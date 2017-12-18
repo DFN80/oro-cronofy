@@ -100,6 +100,12 @@ class DfnOroCronofyBundleInstaller implements Installation
         $table->addColumn('calendar_event_id', 'integer', []);
         $table->addColumn('calendar_origin_id', 'integer', []);
         $table->addColumn('cronofy_id', 'string', []);
+        $table->addColumn('parent_event_id', 'integer', []);
+        $table->addColumn(
+            'recurrence_time',
+            'datetime',
+            ['notnull' => false, 'comment' => '(DC2Type:datetime)']
+        );
         $table->addColumn('reminders', 'json', []);
         $table->addColumn(
             'updated',
@@ -108,7 +114,13 @@ class DfnOroCronofyBundleInstaller implements Installation
         );
         $table->addIndex(['calendar_event_id'], 'IDX_E6B08D0D7495C8E3', []);
         $table->addIndex(['calendar_origin_id'], 'IDX_E6B08D0D15CEF886', []);
+        $table->addIndex(['parent_event_id'], 'IDX_E6B08D0DEE3A445A', []);
         $table->addUniqueIndex(['calendar_event_id', 'calendar_origin_id'], 'dfn_cronofy_event_origin', []);
+        $table->addUniqueIndex(
+            ['parent_event_id', 'recurrence_time'],
+            'dfn_cronofy_recurrence',
+            ['where' => '(parent_event_id IS NOT NULL AND recurrence_time IS NOT NULL)']
+        );
         $table->addForeignKeyConstraint(
             $schema->getTable('oro_calendar_event'),
             ['calendar_event_id'],
@@ -122,6 +134,13 @@ class DfnOroCronofyBundleInstaller implements Installation
             ['id'],
             [],
             'FK_E6B08D0D15CEF886'
+        );
+        $table->addForeignKeyConstraint(
+            $schema->getTable('oro_calendar_event'),
+            ['parent_event_id'],
+            ['id'],
+            ['onDelete' => 'CASCADE'],
+            'FK_E6B08D0DEE3A445A'
         );
     }
 }
