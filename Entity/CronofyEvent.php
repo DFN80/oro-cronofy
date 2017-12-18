@@ -10,7 +10,12 @@ use Oro\Bundle\CalendarBundle\Entity\CalendarEvent;
  *
  * @ORM\Table(name="dfn_cronofy_event",
  *      uniqueConstraints={
- *          @ORM\UniqueConstraint(name="dfn_cronofy_event_origin", columns={"calendar_origin_id", "calendar_event_id"})
+ *          @ORM\UniqueConstraint(name="dfn_cronofy_event_origin", columns={"calendar_origin_id", "calendar_event_id"}),
+ *          @ORM\UniqueConstraint(
+ *              name="dfn_cronofy_recurrence",
+ *              columns={"parent_event_id", "recurrence_time"},
+ *              options={"where": "(parent_event_id IS NOT NULL AND recurrence_time IS NOT NULL)"}
+ *          )
  *     }
  * )
  * @ORM\Entity()
@@ -40,6 +45,25 @@ class CronofyEvent
      * @ORM\Column(name="cronofy_id", type="string", length=255, nullable=true)
      */
     protected $cronofyId;
+
+    /**
+     * Only has a value if the event is a recurrence of a parent event and the recurrence is not tracked in Oro already.
+     *
+     * @var CalendarEvent
+     *
+     * @ORM\ManyToOne(targetEntity="Oro\Bundle\CalendarBundle\Entity\CalendarEvent")
+     * @ORM\JoinColumn(name="parent_event_id", onDelete="CASCADE")
+     */
+    protected $parentEvent;
+
+    /**
+     * Only has a value if the event is a recurrence of a parent event and the recurrence is not tracked in Oro already.
+     *
+     * @var \DateTime
+     *
+     * @ORM\Column(name="recurrence_time", type="datetime", nullable=true)
+     */
+    protected $recurrenceTime;
 
     /**
      * @var CalendarOrigin
@@ -76,7 +100,7 @@ class CronofyEvent
     /**
      * @return CalendarEvent
      */
-    public function getCalendarEvent(): CalendarEvent
+    public function getCalendarEvent()
     {
         return $this->calendarEvent;
     }
@@ -103,6 +127,38 @@ class CronofyEvent
     public function setCronofyId(string $cronofyId)
     {
         $this->cronofyId = $cronofyId;
+    }
+
+    /**
+     * @return CalendarEvent
+     */
+    public function getParentEvent()
+    {
+        return $this->parentEvent;
+    }
+
+    /**
+     * @param CalendarEvent $parentEvent
+     */
+    public function setParentEvent(CalendarEvent $parentEvent)
+    {
+        $this->parentEvent = $parentEvent;
+    }
+
+    /**
+     * @return \DateTime
+     */
+    public function getRecurrenceTime()
+    {
+        return $this->recurrenceTime;
+    }
+
+    /**
+     * @param \DateTime $recurrenceTime
+     */
+    public function setRecurrenceTime(\DateTime $recurrenceTime)
+    {
+        $this->recurrenceTime = $recurrenceTime;
     }
 
     /**
