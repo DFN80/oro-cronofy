@@ -42,6 +42,7 @@ class CalendarOriginRepository extends EntityRepository
                                 'ce.id IS NULL',
                                 'e.start > :from',
                                 'e.end < :to',
+                                'e.cancelled = FALSE',
                                 'c.owner = :userId',
                                 'c.organization = :orgId'
                             )
@@ -50,6 +51,54 @@ class CalendarOriginRepository extends EntityRepository
                                     'orgId' => $orgId,
                                     'userId' => $userId,
                                     'originId' => $originId,
+                                    'from' => $from,
+                                    'to' => $to
+                                ]
+                            )
+                            ->getQuery();
+
+        $results = $query->getResult();
+        $results = array_merge($results, $this->getRecurringEventsToSync($calendarOrigin));
+
+        return $results;
+    }
+
+    /**
+     * Get recurring calendar events for the users calendar tied to the passed CalendarOrigin
+     * that have not past the end date and are after the last push date.
+     *
+     * @param CalendarOrigin $calendarOrigin
+     *
+     * @return array
+     */
+    public function getRecurringEventsToSync(CalendarOrigin $calendarOrigin)
+    {
+        $userId = $calendarOrigin->getOwner()->getId();
+        $orgId = $calendarOrigin->getOrganization()->getId();
+        $repository = $this->getEntityManager();
+
+        $from = $calendarOrigin->getLastPushedAt();
+        $to = new \DateTime("now +".CronofySyncHandler::DAYS_FORWARD."days");
+
+        $query = $repository->createQueryBuilder()
+                            ->select(['e.id'])
+                            ->from('OroCalendarBundle:CalendarEvent', 'e')
+                            ->join('e.calendar', 'c')
+                            ->leftJoin(
+                                'e.recurrence',
+                                'r'
+                            )
+                            ->andWhere(
+                                'r.calculatedEndTime > :from',
+                                'r.calculatedEndTime < :to',
+                                'e.cancelled = FALSE',
+                                'c.owner = :userId',
+                                'c.organization = :orgId'
+                            )
+                            ->setParameters(
+                                [
+                                    'orgId' => $orgId,
+                                    'userId' => $userId,
                                     'from' => $from,
                                     'to' => $to
                                 ]
