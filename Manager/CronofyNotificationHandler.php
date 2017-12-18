@@ -58,6 +58,8 @@ class CronofyNotificationHandler
 
     /**
      * @param array $message
+     *
+     * @throws \Exception
      */
     public function processNotification(array $message)
     {
@@ -70,9 +72,8 @@ class CronofyNotificationHandler
         );
 
         if (!$calendarOrigin) {
-            //No origin found for the specified channel, we can't do anything with this message.
-            //TODO log this
-            return;
+            //No active origin found for the specified channel, we can't do anything with this message.
+            throw new \Exception("No active origin found.");
         }
 
         $type = $message['notification']['type'];
